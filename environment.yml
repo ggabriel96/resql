@@ -1,0 +1,9 @@
+# for use with conda (https://docs.conda.io/en/latest/miniconda.html):
+# conda env create -f environment.yml
+name: "resql"
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pip=20
+  - python=3.9
