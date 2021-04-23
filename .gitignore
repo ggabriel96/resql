@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# JetBrains
+# based on https://github.com/github/gitignore/blob/master/Global/JetBrains.gitignore
+.idea/
+.idea_modules/
+out/
+*.iws
