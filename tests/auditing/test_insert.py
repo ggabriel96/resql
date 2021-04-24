@@ -13,7 +13,9 @@ def test_orm_insert_should_be_audited(
     audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
 ) -> None:
     # Arrange
-    now = dt.datetime.utcnow()
+    now = dt.datetime.utcnow().replace(microsecond=0)
+    dt_before = now - dt.timedelta(seconds=1)
+    dt_after = now + dt.timedelta(seconds=1)
     person = Person(name="Someone", age=25)
     expected_diff = dict(
         name=Diff(old=None, new="Someone"),
@@ -32,6 +34,6 @@ def test_orm_insert_should_be_audited(
             change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
             assert len(change_logs) == 1
             assert change_logs[0].type == "insert"
-            assert change_logs[0].executed_at <= now
+            assert dt_before <= change_logs[0].executed_at <= dt_after
             assert change_logs[0].table_name == Person.__tablename__
             assert change_logs[0].diff == expected_diff
