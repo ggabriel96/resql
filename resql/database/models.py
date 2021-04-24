@@ -1,11 +1,10 @@
 from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import registry
+from sqlalchemy.orm import declarative_base
 
-mapper_registry = registry()
+Base = declarative_base()
 
 
-@mapper_registry.mapped
-class Person:
+class Person(Base):
     __tablename__ = "person"
 
     id = Column(Integer, primary_key=True)

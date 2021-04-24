@@ -1,11 +1,10 @@
 from sqlalchemy import Column, DateTime, Integer, JSON, String, func
-from sqlalchemy.orm import registry
+from sqlalchemy.orm import declarative_base
 
-mapper_registry = registry()
+Base = declarative_base()
 
 
-@mapper_registry.mapped
-class ChangeLog:
+class ChangeLog(Base):
     __tablename__ = "change_log"
 
     id = Column(Integer, primary_key=True)

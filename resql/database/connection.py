@@ -2,9 +2,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from resql.database.auditing import log_changes, log_queries
-from resql.database.models import mapper_registry as experiment_registry
-from resql.database.models_audit import mapper_registry as audit_registry
-from resql.database.models_recovery import mapper_registry as recovery_registry
+from resql.database.models import Base
+from resql.database.models_audit import Base as AuditBase
+from resql.database.models_recovery import Base as RecoveryBase
 
 
 AUDIT_ENGINE = create_engine(
@@ -27,9 +27,9 @@ RECOVERY_ENGINE = create_engine(
 )
 
 
-audit_registry.metadata.create_all(AUDIT_ENGINE)
-experiment_registry.metadata.create_all(EXPERIMENT_ENGINE)
-recovery_registry.metadata.create_all(RECOVERY_ENGINE)
+Base.metadata.create_all(EXPERIMENT_ENGINE)
+AuditBase.metadata.create_all(AUDIT_ENGINE)
+RecoveryBase.metadata.create_all(RECOVERY_ENGINE)
 
 SESSION = sessionmaker(EXPERIMENT_ENGINE, future=True)
 
