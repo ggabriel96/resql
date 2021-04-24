@@ -24,19 +24,21 @@ def test_orm_insert_should_be_audited(
 
     # Act
     log_changes(of=production_mksession, to=audit_engine)
-
-    with production_mksession() as session:
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         session.add(person)
-        session.commit()
 
-        # Assert
-        with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
-            change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
-            assert len(change_logs) == 1
-            assert change_logs[0].type == "insert"
-            assert dt_before <= change_logs[0].executed_at <= dt_after
-            assert change_logs[0].table_name == Person.__tablename__
-            assert change_logs[0].diff == expected_diff
+    # Assert
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        inserted_people = session.execute(select(Person)).all()
+        assert len(inserted_people) == 1
+
+    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+        change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+        assert len(change_logs) == 1
+        assert change_logs[0].type == "insert"
+        assert dt_before <= change_logs[0].executed_at <= dt_after
+        assert change_logs[0].table_name == Person.__tablename__
+        assert change_logs[0].diff == expected_diff
 
 
 def test_many_orm_inserts_should_be_audited(
@@ -64,27 +66,29 @@ def test_many_orm_inserts_should_be_audited(
 
     # Act
     log_changes(of=production_mksession, to=audit_engine)
-
-    with production_mksession() as session:
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         session.add_all(people)
-        session.commit()
 
-        # Assert
-        with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
-            change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
-            assert len(change_logs) == 3
-            assert change_logs[0].type == "insert"
-            assert change_logs[1].type == "insert"
-            assert change_logs[2].type == "insert"
-            assert dt_before <= change_logs[0].executed_at <= dt_after
-            assert dt_before <= change_logs[1].executed_at <= dt_after
-            assert dt_before <= change_logs[2].executed_at <= dt_after
-            assert change_logs[0].table_name == Person.__tablename__
-            assert change_logs[1].table_name == Person.__tablename__
-            assert change_logs[2].table_name == Person.__tablename__
-            assert change_logs[0].diff == expected_diffs[0]
-            assert change_logs[1].diff == expected_diffs[1]
-            assert change_logs[2].diff == expected_diffs[2]
+    # Assert
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        inserted_people = session.execute(select(Person)).all()
+        assert len(inserted_people) == 3
+
+    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+        change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+        assert len(change_logs) == 3
+        assert change_logs[0].type == "insert"
+        assert change_logs[1].type == "insert"
+        assert change_logs[2].type == "insert"
+        assert dt_before <= change_logs[0].executed_at <= dt_after
+        assert dt_before <= change_logs[1].executed_at <= dt_after
+        assert dt_before <= change_logs[2].executed_at <= dt_after
+        assert change_logs[0].table_name == Person.__tablename__
+        assert change_logs[1].table_name == Person.__tablename__
+        assert change_logs[2].table_name == Person.__tablename__
+        assert change_logs[0].diff == expected_diffs[0]
+        assert change_logs[1].diff == expected_diffs[1]
+        assert change_logs[2].diff == expected_diffs[2]
 
 
 def test_rolled_back_orm_insert_should_not_be_audited(
@@ -95,15 +99,18 @@ def test_rolled_back_orm_insert_should_not_be_audited(
 
     # Act
     log_changes(of=production_mksession, to=audit_engine)
-
     with production_mksession() as session:
         session.add(person)
         session.rollback()
 
-        # Assert
-        with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
-            change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
-            assert change_logs == []
+    # Assert
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        inserted_people = session.execute(select(Person)).all()
+        assert len(inserted_people) == 0
+
+    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+        change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+        assert change_logs == []
 
 
 def test_core_insert_is_not_audited(
@@ -114,15 +121,17 @@ def test_core_insert_is_not_audited(
 
     # Act
     log_changes(of=production_mksession, to=audit_engine)
-
-    with production_mksession() as session:
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         session.execute(insert(Person).values(**person))
-        session.commit()
 
-        # Assert
-        with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
-            change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
-            assert change_logs == []
+    # Assert
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        inserted_people = session.execute(select(Person)).all()
+        assert len(inserted_people) == 1
+
+    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+        change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+        assert change_logs == []
 
 
 def test_many_core_inserts_is_not_audited(
@@ -134,14 +143,17 @@ def test_many_core_inserts_is_not_audited(
     # Act
     log_changes(of=production_mksession, to=audit_engine)
 
-    with production_mksession() as session:
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         session.execute(insert(Person), people)
-        session.commit()
 
-        # Assert
-        with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
-            change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
-            assert change_logs == []
+    # Assert
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        inserted_people = session.execute(select(Person)).all()
+        assert len(inserted_people) == 3
+
+    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+        change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+        assert change_logs == []
 
 
 def test_text_insert_is_not_audited(
@@ -152,15 +164,17 @@ def test_text_insert_is_not_audited(
 
     # Act
     log_changes(of=production_mksession, to=audit_engine)
-
-    with production_mksession() as session:
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         session.execute(text("INSERT INTO person(name, age) VALUES (:name, :age)").bindparams(**person))
-        session.commit()
 
-        # Assert
-        with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
-            change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
-            assert change_logs == []
+    # Assert
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        inserted_people = session.execute(select(Person)).all()
+        assert len(inserted_people) == 1
+
+    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+        change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+        assert change_logs == []
 
 
 def test_many_text_inserts_is_not_audited(
@@ -171,12 +185,14 @@ def test_many_text_inserts_is_not_audited(
 
     # Act
     log_changes(of=production_mksession, to=audit_engine)
-
-    with production_mksession() as session:
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         session.execute(text("INSERT INTO person(name, age) VALUES (:name, :age)"), people)
-        session.commit()
 
-        # Assert
-        with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
-            change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
-            assert change_logs == []
+    # Assert
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        inserted_people = session.execute(select(Person)).all()
+        assert len(inserted_people) == 3
+
+    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+        change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+        assert change_logs == []
