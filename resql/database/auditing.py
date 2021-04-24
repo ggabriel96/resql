@@ -109,9 +109,7 @@ def get_model_history(obj: Any) -> ModelHistory:
 
 @dataclass()
 class Auditor:
-    user: str
-    service: str
-    audit_session: Session
+    target_session: Session
 
     def _log_delete(self, obj: Any) -> ChangeLog:
         return ChangeLog(
@@ -147,11 +145,11 @@ class Auditor:
     def after_flush(self, session: Session, _: UOWTransaction) -> None:
         # insert needs to be after flush because we don't know the id
         for obj in session.new:
-            self.audit_session.add(self._log_insert(obj))
+            self.target_session.add(self._log_insert(obj))
 
     def before_flush(self, session: Session, _: UOWTransaction, __: Any) -> None:
         # do we really need this at `before_flush`?
         for obj in session.deleted:
-            self.audit_session.add(self._log_delete(obj))
+            self.target_session.add(self._log_delete(obj))
         for obj in session.dirty:
-            self.audit_session.add(self._log_update(obj))
+            self.target_session.add(self._log_update(obj))

@@ -50,7 +50,7 @@ class AuditedSession:
             audit_session = stack.enter_context(self._audit_session_maker.begin())
             experiment_session = stack.enter_context(self.experiment_session_maker.begin())
 
-            auditor = Auditor("gabriel", "experiment", audit_session=audit_session)
+            auditor = Auditor(target_session=audit_session)
             event.listen(experiment_session, "after_flush", auditor.after_flush)
             event.listen(experiment_session, "before_flush", auditor.before_flush)
 
