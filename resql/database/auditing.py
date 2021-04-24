@@ -165,3 +165,7 @@ class ChangeLogger:
                 target_session.add(self._log_update(obj))
             for obj in session.new:
                 target_session.add(self._log_insert(obj))
+
+
+def log_changes(*, of: sessionmaker, to: Engine) -> None:
+    ChangeLogger(to).listen(of)
