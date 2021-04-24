@@ -1,5 +1,6 @@
 import datetime as dt
 
+import pytest
 from sqlalchemy import insert, select, text
 from sqlalchemy.future import Engine
 from sqlalchemy.orm import sessionmaker
@@ -102,6 +103,29 @@ def test_rolled_back_orm_insert_should_not_be_audited(
     with production_mksession() as session:
         session.add(person)
         session.rollback()
+
+    # Assert
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        inserted_people = session.execute(select(Person)).all()
+        assert len(inserted_people) == 0
+
+    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+        change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+        assert change_logs == []
+
+
+def test_orm_insert_rolled_back_by_exception_should_not_be_audited(
+    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+) -> None:
+    # Arrange
+    person = Person(name="Someone", age=25)
+
+    # Act
+    log_changes(of=production_mksession, to=audit_engine)
+    with pytest.raises(RuntimeError):
+        with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+            session.add(person)
+            raise RuntimeError("nope")
 
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
