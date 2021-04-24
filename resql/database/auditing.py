@@ -1,5 +1,5 @@
-from dataclasses import asdict, dataclass
-from typing import Any, Iterator
+from dataclasses import dataclass
+from typing import Any, Iterator, Literal, TypedDict
 
 from sqlalchemy import event, inspect
 from sqlalchemy.engine import CursorResult
@@ -19,7 +19,6 @@ from resql.database.models_audit import ChangeLog
 from resql.database.models_recovery import QueryLog
 
 
-@dataclass
 class QueryLogger:
     session_maker: sessionmaker
 
@@ -54,17 +53,15 @@ def log_queries(*, of: Engine, to: Engine) -> None:
     QueryLogger(to).listen(of)
 
 
-@dataclass
-class Diff:
+class Diff(TypedDict):
+    # just to have predefined keys
     new: Any
     old: Any
 
 
 @dataclass
-class ModelHistory:
-    diff: dict[str, dict[str, Any]]
-    new_values: dict[str, Any]
-    old_values: dict[str, Any]
+class ModelDiff:
+    values: dict[str, Diff]
 
 
 def get_properties(state: InstanceState) -> Iterator[ColumnProperty]:
@@ -82,21 +79,10 @@ def get_properties(state: InstanceState) -> Iterator[ColumnProperty]:
             continue
 
 
-def obj_as_dict(obj: Any) -> dict[str, Any]:
-    values = dict()
-    properties = get_properties(inspect(obj))
-    # cannot just use __dict__ because that also brings stuff other than the model attributes
-    for prop in properties:
-        # expired object attributes and also deferred cols might not be in the dict.
-        # force it to load no matter what by using getattr().
-        values[prop.key] = getattr(obj, prop.key)
-    return values
-
-
-def get_model_history(obj: Any) -> ModelHistory:
+def get_model_diff(obj: Any) -> ModelDiff:
     state: InstanceState = inspect(obj)
     properties = get_properties(state)
-    model_history = ModelHistory(old_values={}, new_values={}, diff={})
+    model_diff = ModelDiff(values={})
     for prop in properties:
         # expired object attributes and also deferred cols might not be in the dict.
         # force it to load no matter what by using getattr().
@@ -105,59 +91,27 @@ def get_model_history(obj: Any) -> ModelHistory:
 
         history = attributes.get_history(obj, prop.key)
         if history.added and history.deleted:
-            diff = Diff(old=history.deleted[0], new=history.added[0])
-            model_history.diff[prop.key] = asdict(diff)
-            model_history.old_values[prop.key] = diff.old
-            model_history.new_values[prop.key] = diff.new
+            model_diff.values[prop.key] = Diff(old=history.deleted[0], new=history.added[0])
         elif history.added:
-            diff = Diff(old=None, new=history.added[0])
-            model_history.diff[prop.key] = asdict(diff)
-            model_history.old_values[prop.key] = diff.old
-            model_history.new_values[prop.key] = diff.new
+            model_diff.values[prop.key] = Diff(old=None, new=history.added[0])
         elif history.deleted:
-            diff = Diff(old=history.deleted[0], new=None)
-            model_history.diff[prop.key] = asdict(diff)
-            model_history.old_values[prop.key] = diff.old
-            model_history.new_values[prop.key] = diff.new
-        elif history.unchanged:
-            model_history.old_values[prop.key] = history.unchanged[0]
-            model_history.new_values[prop.key] = history.unchanged[0]
-    return model_history
+            model_diff.values[prop.key] = Diff(old=history.deleted[0], new=None)
+    return model_diff
 
 
-@dataclass()
 class ChangeLogger:
     session_maker: sessionmaker
 
     def __init__(self, target_engine: Engine) -> None:
         self.session_maker = sessionmaker(target_engine, future=True)
 
-    def _log_delete(self, obj: Any) -> ChangeLog:
+    @staticmethod
+    def _new_log(obj: Any, log_type: Literal["delete", "insert", "update"]) -> ChangeLog:
+        diff = get_model_diff(obj)
         return ChangeLog(
             table_name=getattr(obj, "__tablename__"),
-            new_values=None,
-            old_values=obj_as_dict(obj),
-            diff=None,
-            type="delete",
-        )
-
-    def _log_insert(self, obj: Any) -> ChangeLog:
-        return ChangeLog(
-            table_name=getattr(obj, "__tablename__"),
-            new_values=obj_as_dict(obj),
-            old_values=None,
-            diff=None,
-            type="insert",
-        )
-
-    def _log_update(self, obj: Any) -> ChangeLog:
-        history = get_model_history(obj)
-        return ChangeLog(
-            table_name=getattr(obj, "__tablename__"),
-            new_values=history.new_values,
-            old_values=history.old_values,
-            diff=history.diff,
-            type="update",
+            diff=diff.values,
+            type=log_type,
         )
 
     def listen(self, session_maker: sessionmaker) -> None:
@@ -166,11 +120,11 @@ class ChangeLogger:
     def after_flush(self, session: Session, _: UOWTransaction) -> None:
         with self.session_maker.begin() as target_session:  # type: ignore[no-untyped-call]
             for obj in session.deleted:
-                target_session.add(self._log_delete(obj))
+                target_session.add(self._new_log(obj, "delete"))
             for obj in session.dirty:
-                target_session.add(self._log_update(obj))
+                target_session.add(self._new_log(obj, "update"))
             for obj in session.new:
-                target_session.add(self._log_insert(obj))
+                target_session.add(self._new_log(obj, "insert"))
 
 
 def log_changes(*, of: sessionmaker, to: Engine) -> None:
