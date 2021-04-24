@@ -33,6 +33,7 @@ class QueryLogger:
             return
         with self.session_maker.begin() as session:
             log = QueryLog(
+                dialect_description=conn.dialect.dialect_description,
                 statement=str(result.context.compiled),
                 parameters=result.context.compiled_parameters,
                 type=type(clauseelement).__name__,
