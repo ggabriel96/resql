@@ -38,7 +38,7 @@ class QueryLogger:
     ) -> None:
         if isinstance(clauseelement, Select):
             return
-        with self.session_maker.begin() as session:  # type: ignore[no-untyped-call]
+        with self.session_maker.begin() as session:  # type: ignore[no-untyped-call] # pylint: disable=no-member
             log = QueryLog(
                 dialect_description=conn.dialect.dialect_description,
                 statement=str(result.context.compiled),
@@ -117,7 +117,7 @@ class ChangeLogger:
         event.listen(session_maker, "after_flush", self.after_flush)
 
     def after_flush(self, session: Session, _: UOWTransaction) -> None:
-        with self.session_maker.begin() as target_session:  # type: ignore[no-untyped-call]
+        with self.session_maker.begin() as target_session:  # type: ignore[no-untyped-call] # pylint: disable=no-member
             for obj in session.deleted:
                 target_session.add(self._new_log(obj, "delete"))
             for obj in session.dirty:
