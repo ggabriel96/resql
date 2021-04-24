@@ -5,8 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.future import Engine
 from sqlalchemy.orm import sessionmaker
 
-from resql.database.models_audit import Base as AuditBase
-from resql.database.models_recovery import Base as RecoveryBase
+from resql.models import AuditingBase, RecoveryBase
 from tests.models import Base as ProductionBase
 from tests.settings import Environment
 from tests.utils import truncate_all
@@ -25,7 +24,7 @@ def _audit_engine(env: Environment) -> Engine:
         future=True,
         logging_name="AUDITING",
     )
-    AuditBase.metadata.create_all(audit_engine)
+    AuditingBase.metadata.create_all(audit_engine)
     return audit_engine  # type: ignore[return-value]
 
 

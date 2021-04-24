@@ -15,8 +15,7 @@ from sqlalchemy.orm import (
 from sqlalchemy.orm.exc import UnmappedColumnError
 from sqlalchemy.sql import Select
 
-from resql.database.models_audit import ChangeLog
-from resql.database.models_recovery import QueryLog
+from resql.models import ChangeLog, QueryLog
 
 
 class QueryLogger:

@@ -4,8 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.future import Engine
 from sqlalchemy.orm import sessionmaker
 
-from resql.database.auditing import Diff, log_changes
-from resql.database.models_audit import ChangeLog
+from resql.auditing import Diff, log_changes
+from resql.models import ChangeLog
 from tests.models import Person
 
 
