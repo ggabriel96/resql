@@ -56,10 +56,9 @@ jobs:
         if: steps.dependency-cache.outputs.cache-hit != 'true'
         run: poetry install --no-interaction
 
-      - run: source .venv/bin/activate
-
-      - run: black --check resql/ tests/
-
-      - run: mypy resql/ tests/
-
-      - run: pylint resql/ tests/
+      - name: Run linters
+        run: |
+          source .venv/bin/activate
+          black --check resql/ tests/
+          mypy resql/ tests/
+          pylint resql/ tests/
