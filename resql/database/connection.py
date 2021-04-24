@@ -41,20 +41,20 @@ event.listen(EXPERIMENT_ENGINE, "after_execute", LOGGER.after_execute)
 
 @dataclass
 class AuditedSession:
-    _audit_session_maker = sessionmaker(AUDIT_ENGINE, future=True)
-    experiment_session_maker = sessionmaker(EXPERIMENT_ENGINE, future=True)
+    session_maker = sessionmaker(EXPERIMENT_ENGINE, future=True)
+    _rescue_session_maker = sessionmaker(AUDIT_ENGINE, future=True)
 
     @contextmanager
     def begin(self) -> Iterator[Session]:
         with ExitStack() as stack:
-            audit_session = stack.enter_context(self._audit_session_maker.begin())
-            experiment_session = stack.enter_context(self.experiment_session_maker.begin())
+            rescue_session = stack.enter_context(self._rescue_session_maker.begin())
+            session = stack.enter_context(self.session_maker.begin())
 
-            auditor = Auditor(target_session=audit_session)
-            event.listen(experiment_session, "after_flush", auditor.after_flush)
-            event.listen(experiment_session, "before_flush", auditor.before_flush)
+            auditor = Auditor(target_session=rescue_session)
+            event.listen(session, "after_flush", auditor.after_flush)
+            event.listen(session, "before_flush", auditor.before_flush)
 
-            yield experiment_session
+            yield session
 
 
 SESSION = AuditedSession()
