@@ -1,8 +1,9 @@
 from dataclasses import asdict, dataclass
-from typing import Iterator, Any
+from typing import Any, Iterator
 
 from sqlalchemy import event, inspect
-from sqlalchemy.future import Engine
+from sqlalchemy.engine import CursorResult
+from sqlalchemy.future import Connection, Engine
 from sqlalchemy.orm import (
     sessionmaker,
     InstanceState,
@@ -28,7 +29,15 @@ class QueryLogger:
     def listen(self, engine: Engine) -> None:
         event.listen(engine, "after_execute", self.after_execute)
 
-    def after_execute(self, conn, clauseelement, multiparams, params, execution_options, result):
+    def after_execute(
+        self,
+        conn: Connection,
+        clauseelement: Any,
+        multiparams: list[dict[str, Any]],
+        params: dict[str, Any],
+        execution_options: dict[str, Any],
+        result: CursorResult,
+    ) -> None:
         if isinstance(clauseelement, Select):
             return
         with self.session_maker.begin() as session:
