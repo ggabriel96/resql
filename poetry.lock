@@ -194,6 +194,18 @@ pymysql = ["pymysql (<1)", "pymysql"]
 sqlcipher = ["sqlcipher3-binary"]
 
 [[package]]
+name = "sqlalchemy2-stubs"
+version = "0.0.1a4"
+description = "Typing Stubs for SQLAlchemy 1.4"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+mypy = ">=0.790"
+typing-extensions = ">=3.7.4"
+
+[[package]]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
@@ -228,7 +240,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "eb6c398b0d2f6b08f5a6b2d8b14e27e57f48dbe567468eeb092ad8ae4f6261bf"
+content-hash = "b5a469701e0ac3bc8a48d69e0f716387a24a4a2207c14e11ca9d91cba77d9829"
 
 [metadata.files]
 appdirs = [
@@ -478,6 +490,10 @@ sqlalchemy = [
     {file = "SQLAlchemy-1.4.11-cp39-cp39-win32.whl", hash = "sha256:e7d76312e904aa4ea221a92c0bc2e299ad46e4580e2d72ca1f7e6d31dce5bfab"},
     {file = "SQLAlchemy-1.4.11-cp39-cp39-win_amd64.whl", hash = "sha256:4a2e7f037d3ca818d6d0490e3323fd451545f580df30d62b698da2f247015a34"},
     {file = "SQLAlchemy-1.4.11.tar.gz", hash = "sha256:4ad4044eb86fbcbdff2106e44f479fbdac703d77860b3e19988c8a8786e73061"},
+]
+sqlalchemy2-stubs = [
+    {file = "sqlalchemy2-stubs-0.0.1a4.tar.gz", hash = "sha256:821d48cba522d151419e0abff63c348eb9e9312a0758171c57ca34d68f4e0280"},
+    {file = "sqlalchemy2_stubs-0.0.1a4-py3-none-any.whl", hash = "sha256:0b83f4885a24adc1f469c4ff2320f639edd179e85e085a38d4f671942bb4f067"},
 ]
 toml = [
     {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
