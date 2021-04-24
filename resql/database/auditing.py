@@ -29,7 +29,7 @@ class QueryLogger:
     def listen(self, engine: Engine) -> None:
         event.listen(engine, "after_execute", self.after_execute)
 
-    def after_execute(
+    def after_execute(  # pylint: disable=too-many-arguments,unused-argument
         self,
         conn: Connection,
         clauseelement: Any,
