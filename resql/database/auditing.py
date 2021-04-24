@@ -153,16 +153,11 @@ class ChangeLogger:
 
     def listen(self, session: Session) -> None:
         event.listen(session, "after_flush", self.after_flush)
-        event.listen(session, "before_flush", self.before_flush)
 
     def after_flush(self, session: Session, _: UOWTransaction) -> None:
-        # insert needs to be after flush because we don't know the id
-        for obj in session.new:
-            self.target_session.add(self._log_insert(obj))
-
-    def before_flush(self, session: Session, _: UOWTransaction, __: Any) -> None:
-        # do we really need this at `before_flush`?
         for obj in session.deleted:
             self.target_session.add(self._log_delete(obj))
         for obj in session.dirty:
             self.target_session.add(self._log_update(obj))
+        for obj in session.new:
+            self.target_session.add(self._log_insert(obj))
