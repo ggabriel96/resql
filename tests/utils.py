@@ -5,6 +5,6 @@ from sqlalchemy.future import Engine
 def truncate_all(engine: Engine) -> None:
     meta = MetaData()
     meta.reflect(bind=engine)
-    with engine.begin() as conn:
+    with engine.begin() as conn:  # type: ignore[no-untyped-call]
         for table in reversed(meta.sorted_tables):
             conn.execute(table.delete())

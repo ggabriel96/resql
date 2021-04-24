@@ -1,3 +1,5 @@
+from typing import Iterator
+
 from pytest import fixture
 from sqlalchemy import create_engine
 from sqlalchemy.future import Engine
@@ -24,7 +26,7 @@ def _audit_engine(env: Environment) -> Engine:
         logging_name="AUDITING",
     )
     AuditBase.metadata.create_all(audit_engine)
-    return audit_engine
+    return audit_engine  # type: ignore[return-value]
 
 
 @fixture(name="recovery_engine", scope="session")
@@ -36,7 +38,7 @@ def _recovery_engine(env: Environment) -> Engine:
         logging_name="RECOVERY",
     )
     RecoveryBase.metadata.create_all(recovery_engine)
-    return recovery_engine
+    return recovery_engine  # type: ignore[return-value]
 
 
 @fixture(name="production_engine", scope="session")
@@ -48,22 +50,22 @@ def _production_engine(env: Environment) -> Engine:
         logging_name="PRODUCTN",
     )
     ProductionBase.metadata.create_all(production_engine)
-    return production_engine
+    return production_engine  # type: ignore[return-value]
 
 
 @fixture(name="audit_mksession", scope="function")
-def _audit_mksession(audit_engine: Engine) -> sessionmaker:
+def _audit_mksession(audit_engine: Engine) -> Iterator[sessionmaker]:
     yield sessionmaker(audit_engine, future=True)
     truncate_all(audit_engine)
 
 
 @fixture(name="recovery_mksession", scope="function")
-def _recovery_mksession(recovery_engine: Engine) -> sessionmaker:
+def _recovery_mksession(recovery_engine: Engine) -> Iterator[sessionmaker]:
     yield sessionmaker(recovery_engine, future=True)
     truncate_all(recovery_engine)
 
 
 @fixture(name="production_mksession", scope="function")
-def _production_mksession(production_engine: Engine) -> sessionmaker:
+def _production_mksession(production_engine: Engine) -> Iterator[sessionmaker]:
     yield sessionmaker(production_engine, future=True)
     truncate_all(production_engine)
