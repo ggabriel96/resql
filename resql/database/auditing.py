@@ -1,4 +1,3 @@
-import datetime as dt
 from dataclasses import asdict, dataclass
 from typing import Iterator, Any
 
@@ -126,7 +125,6 @@ class ChangeLogger:
     def _log_delete(self, obj: Any) -> ChangeLog:
         return ChangeLog(
             table_name=getattr(obj, "__tablename__"),
-            executed_at=dt.datetime.now(),
             new_values=None,
             old_values=obj_as_dict(obj),
             diff=None,
@@ -136,7 +134,6 @@ class ChangeLogger:
     def _log_insert(self, obj: Any) -> ChangeLog:
         return ChangeLog(
             table_name=getattr(obj, "__tablename__"),
-            executed_at=dt.datetime.now(),
             new_values=obj_as_dict(obj),
             old_values=None,
             diff=None,
@@ -147,7 +144,6 @@ class ChangeLogger:
         history = get_model_history(obj)
         return ChangeLog(
             table_name=getattr(obj, "__tablename__"),
-            executed_at=dt.datetime.now(),
             new_values=history.new_values,
             old_values=history.old_values,
             diff=history.diff,

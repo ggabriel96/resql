@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Integer, JSON, String
+from sqlalchemy import Column, DateTime, Integer, JSON, String, func
 from sqlalchemy.orm import registry
 
 mapper_registry = registry()
@@ -10,7 +10,7 @@ class ChangeLog:
 
     id = Column(Integer, primary_key=True)
     diff = Column(JSON, nullable=False)
-    executed_at = Column(DateTime, nullable=False)
+    executed_at = Column(DateTime, nullable=False, server_default=func.now())
     new_values = Column(JSON, nullable=False)
     old_values = Column(JSON, nullable=False)
     table_name = Column(String(128), nullable=False)
