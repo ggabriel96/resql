@@ -118,7 +118,10 @@ def get_model_history(obj: Any) -> ModelHistory:
 
 @dataclass()
 class ChangeLogger:
-    target_session: Session
+    session_maker: sessionmaker
+
+    def __init__(self, target_engine: Engine) -> None:
+        self.session_maker = sessionmaker(target_engine, future=True)
 
     def _log_delete(self, obj: Any) -> ChangeLog:
         return ChangeLog(
@@ -151,13 +154,14 @@ class ChangeLogger:
             type="update",
         )
 
-    def listen(self, session: Session) -> None:
-        event.listen(session, "after_flush", self.after_flush)
+    def listen(self, session_maker: sessionmaker) -> None:
+        event.listen(session_maker, "after_flush", self.after_flush)
 
     def after_flush(self, session: Session, _: UOWTransaction) -> None:
-        for obj in session.deleted:
-            self.target_session.add(self._log_delete(obj))
-        for obj in session.dirty:
-            self.target_session.add(self._log_update(obj))
-        for obj in session.new:
-            self.target_session.add(self._log_insert(obj))
+        with self.session_maker.begin() as target_session:
+            for obj in session.deleted:
+                target_session.add(self._log_delete(obj))
+            for obj in session.dirty:
+                target_session.add(self._log_update(obj))
+            for obj in session.new:
+                target_session.add(self._log_insert(obj))

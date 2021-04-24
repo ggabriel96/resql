@@ -1,9 +1,5 @@
-from contextlib import ExitStack, contextmanager
-from dataclasses import dataclass
-from typing import Iterator
-
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker
 
 from resql.database.auditing import ChangeLogger, log_queries
 from resql.database.models import mapper_registry as experiment_registry
@@ -37,19 +33,6 @@ recovery_registry.metadata.create_all(RECOVERY_ENGINE)
 
 log_queries(of=EXPERIMENT_ENGINE, to=RECOVERY_ENGINE)
 
+SESSION = sessionmaker(EXPERIMENT_ENGINE, future=True)
 
-@dataclass
-class AuditedSession:
-    session_maker = sessionmaker(EXPERIMENT_ENGINE, future=True)
-    _rescue_session_maker = sessionmaker(AUDIT_ENGINE, future=True)
-
-    @contextmanager
-    def begin(self) -> Iterator[Session]:
-        with ExitStack() as stack:
-            rescue_session = stack.enter_context(self._rescue_session_maker.begin())
-            session = stack.enter_context(self.session_maker.begin())
-            ChangeLogger(target_session=rescue_session).listen(session)
-            yield session
-
-
-SESSION = AuditedSession()
+ChangeLogger(target_engine=AUDIT_ENGINE).listen(SESSION)
