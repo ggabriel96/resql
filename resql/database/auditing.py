@@ -41,6 +41,10 @@ class QueryLogger:
             session.add(log)
 
 
+def log_queries(*, of: Engine, to: Engine) -> None:
+    QueryLogger(to).listen(of)
+
+
 @dataclass
 class Diff:
     new: Any

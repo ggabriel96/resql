@@ -2,10 +2,10 @@ from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
 from typing import Iterator
 
-from sqlalchemy import create_engine, event
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from resql.database.auditing import ChangeLogger, QueryLogger
+from resql.database.auditing import ChangeLogger, log_queries
 from resql.database.models import mapper_registry as experiment_registry
 from resql.database.models_audit import mapper_registry as audit_registry
 from resql.database.models_recovery import mapper_registry as recovery_registry
@@ -35,7 +35,7 @@ audit_registry.metadata.create_all(AUDIT_ENGINE)
 experiment_registry.metadata.create_all(EXPERIMENT_ENGINE)
 recovery_registry.metadata.create_all(RECOVERY_ENGINE)
 
-QueryLogger(RECOVERY_ENGINE).listen(EXPERIMENT_ENGINE)
+log_queries(of=EXPERIMENT_ENGINE, to=RECOVERY_ENGINE)
 
 
 @dataclass
