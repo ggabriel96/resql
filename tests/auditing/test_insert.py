@@ -1,6 +1,6 @@
 import datetime as dt
 
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, text
 from sqlalchemy.future import Engine
 from sqlalchemy.orm import sessionmaker
 
@@ -117,6 +117,44 @@ def test_many_core_inserts_is_not_audited(
 
     with production_mksession() as session:
         session.execute(insert(Person), people)
+        session.commit()
+
+        # Assert
+        with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+            change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+            assert change_logs == []
+
+
+def test_text_insert_is_not_audited(
+    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+) -> None:
+    # Arrange
+    person = dict(name="Someone", age=25)
+
+    # Act
+    log_changes(of=production_mksession, to=audit_engine)
+
+    with production_mksession() as session:
+        session.execute(text("INSERT INTO person(name, age) VALUES (:name, :age)").bindparams(**person))
+        session.commit()
+
+        # Assert
+        with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+            change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+            assert change_logs == []
+
+
+def test_many_text_inserts_is_not_audited(
+    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+) -> None:
+    # Arrange
+    people = [dict(name="A", age=1), dict(name="B", age=2), dict(name="C", age=3)]
+
+    # Act
+    log_changes(of=production_mksession, to=audit_engine)
+
+    with production_mksession() as session:
+        session.execute(text("INSERT INTO person(name, age) VALUES (:name, :age)"), people)
         session.commit()
 
         # Assert
