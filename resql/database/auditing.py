@@ -3,6 +3,7 @@ from dataclasses import asdict, dataclass
 from typing import Iterator, Any
 
 from sqlalchemy import event, inspect
+from sqlalchemy.future import Engine
 from sqlalchemy.orm import (
     sessionmaker,
     InstanceState,
@@ -21,6 +22,12 @@ from resql.database.models_recovery import QueryLog
 @dataclass
 class QueryLogger:
     session_maker: sessionmaker
+
+    def __init__(self, engine: Engine) -> None:
+        self.session_maker = sessionmaker(engine, future=True)
+
+    def listen(self, engine: Engine) -> None:
+        event.listen(engine, "after_execute", self.after_execute)
 
     def after_execute(self, conn, clauseelement, multiparams, params, execution_options, result):
         if isinstance(clauseelement, Select):

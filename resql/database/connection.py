@@ -35,8 +35,7 @@ audit_registry.metadata.create_all(AUDIT_ENGINE)
 experiment_registry.metadata.create_all(EXPERIMENT_ENGINE)
 recovery_registry.metadata.create_all(RECOVERY_ENGINE)
 
-LOGGER = QueryLogger(session_maker=sessionmaker(RECOVERY_ENGINE, future=True))
-event.listen(EXPERIMENT_ENGINE, "after_execute", LOGGER.after_execute)
+QueryLogger(RECOVERY_ENGINE).listen(EXPERIMENT_ENGINE)
 
 
 @dataclass
