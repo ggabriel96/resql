@@ -1,0 +1,39 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.4.0
+    hooks:
+      - id: check-executables-have-shebangs
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-toml
+      - id: check-yaml
+      - id: debug-statements
+      - id: debug-statements
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: pretty-format-json
+      - id: requirements-txt-fixer
+      - id: requirements-txt-fixer
+      - id: trailing-whitespace
+  - repo: https://github.com/psf/black
+    rev: 20.8b1
+    hooks:
+      - id: black
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        language: system
+        types: [python]
+        entry: python -m mypy
+        pass_filenames: true
+  - repo: local
+    hooks:
+      - id: pylint
+        name: pylint
+        language: system
+        types: [python]
+        entry: python -m pylint
+        pass_filenames: true
