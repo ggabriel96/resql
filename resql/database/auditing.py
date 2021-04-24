@@ -2,7 +2,7 @@ import datetime as dt
 from dataclasses import asdict, dataclass
 from typing import Iterator, Any
 
-from sqlalchemy import inspect
+from sqlalchemy import event, inspect
 from sqlalchemy.orm import (
     sessionmaker,
     InstanceState,
@@ -108,7 +108,7 @@ def get_model_history(obj: Any) -> ModelHistory:
 
 
 @dataclass()
-class Auditor:
+class ChangeLogger:
     target_session: Session
 
     def _log_delete(self, obj: Any) -> ChangeLog:
@@ -141,6 +141,10 @@ class Auditor:
             diff=history.diff,
             type="update",
         )
+
+    def listen(self, session: Session) -> None:
+        event.listen(session, "after_flush", self.after_flush)
+        event.listen(session, "before_flush", self.before_flush)
 
     def after_flush(self, session: Session, _: UOWTransaction) -> None:
         # insert needs to be after flush because we don't know the id

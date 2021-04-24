@@ -5,7 +5,7 @@ from typing import Iterator
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, Session
 
-from resql.database.auditing import Auditor, QueryLogger
+from resql.database.auditing import ChangeLogger, QueryLogger
 from resql.database.models import mapper_registry as experiment_registry
 from resql.database.models_audit import mapper_registry as audit_registry
 from resql.database.models_recovery import mapper_registry as recovery_registry
@@ -49,11 +49,7 @@ class AuditedSession:
         with ExitStack() as stack:
             rescue_session = stack.enter_context(self._rescue_session_maker.begin())
             session = stack.enter_context(self.session_maker.begin())
-
-            auditor = Auditor(target_session=rescue_session)
-            event.listen(session, "after_flush", auditor.after_flush)
-            event.listen(session, "before_flush", auditor.before_flush)
-
+            ChangeLogger(target_session=rescue_session).listen(session)
             yield session
 
 
