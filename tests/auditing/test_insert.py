@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.future import Engine
 from sqlalchemy.orm import sessionmaker
 
-from resql.database.auditing import ChangeLog, log_changes
+from resql.database.auditing import ChangeLog, Diff, log_changes
 from tests.models import Person
 
 
@@ -18,8 +18,8 @@ def test_orm_insert_should_be_audited(
     now = dt.datetime.utcnow()
     person = Person(name="Someone", age=25)
     expected_diff = dict(
-        name=dict(old=None, new="Someone"),
-        age=dict(old=None, new=25),
+        name=Diff(old=None, new="Someone"),
+        age=Diff(old=None, new=25),
     )
 
     # Act
