@@ -1,0 +1,12 @@
+[MASTER]
+
+[MESSAGES CONTROL]
+disable =
+  missing-class-docstring,
+  missing-function-docstring,
+  missing-module-docstring,
+  too-few-public-methods
+
+[FORMAT]
+max-line-length = 120
+good-names = _,ex,of,pk,to
