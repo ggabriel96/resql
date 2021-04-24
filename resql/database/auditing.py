@@ -35,9 +35,7 @@ class QueryLogger:
         with self.session_maker.begin() as session:
             log = QueryLog(
                 statement=str(result.context.compiled),
-                parameters=result.context.compiled_parameters
-                if result.context.executemany
-                else result.context.compiled_parameters[0],
+                parameters=result.context.compiled_parameters,
                 type=type(clauseelement).__name__,
             )
             session.add(log)
