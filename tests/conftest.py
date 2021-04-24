@@ -7,6 +7,7 @@ from resql.database.models_audit import Base as AuditBase
 from resql.database.models_recovery import Base as RecoveryBase
 from tests.models import Base as ProductionBase
 from tests.settings import Environment
+from tests.utils import truncate_all
 
 
 @fixture(name="env", scope="session")
@@ -50,16 +51,19 @@ def _production_engine(env: Environment) -> Engine:
     return production_engine
 
 
-@fixture(name="audit_mksession", scope="session")
+@fixture(name="audit_mksession", scope="function")
 def _audit_mksession(audit_engine: Engine) -> sessionmaker:
-    return sessionmaker(audit_engine, future=True)
+    yield sessionmaker(audit_engine, future=True)
+    truncate_all(audit_engine)
 
 
-@fixture(name="recovery_mksession", scope="session")
+@fixture(name="recovery_mksession", scope="function")
 def _recovery_mksession(recovery_engine: Engine) -> sessionmaker:
-    return sessionmaker(recovery_engine, future=True)
+    yield sessionmaker(recovery_engine, future=True)
+    truncate_all(recovery_engine)
 
 
-@fixture(name="production_mksession", scope="session")
+@fixture(name="production_mksession", scope="function")
 def _production_mksession(production_engine: Engine) -> sessionmaker:
-    return sessionmaker(production_engine, future=True)
+    yield sessionmaker(production_engine, future=True)
+    truncate_all(production_engine)
