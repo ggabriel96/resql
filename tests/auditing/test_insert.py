@@ -87,6 +87,25 @@ def test_many_orm_inserts_should_be_audited(
             assert change_logs[2].diff == expected_diffs[2]
 
 
+def test_rolled_back_orm_insert_should_not_be_audited(
+    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+) -> None:
+    # Arrange
+    person = Person(name="Someone", age=25)
+
+    # Act
+    log_changes(of=production_mksession, to=audit_engine)
+
+    with production_mksession() as session:
+        session.add(person)
+        session.rollback()
+
+        # Assert
+        with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+            change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+            assert change_logs == []
+
+
 def test_core_insert_is_not_audited(
     audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
 ) -> None:
