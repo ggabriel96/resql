@@ -10,10 +10,7 @@ from tests.models import Person
 
 
 def test_orm_insert_should_be_audited(
-    audit_engine: Engine,
-    production_engine: Engine,
-    audit_mksession: sessionmaker,
-    production_mksession: sessionmaker,
+    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
 ) -> None:
     # Arrange
     now = dt.datetime.utcnow()
