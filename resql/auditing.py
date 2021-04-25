@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Iterator, Literal, TypedDict
+from typing import Any, Iterator, Literal, TypedDict, Union
 
 from sqlalchemy import event, inspect
 from sqlalchemy.engine import CursorResult
@@ -23,6 +23,9 @@ class QueryLogger:
 
     def __init__(self, target_engine: Engine) -> None:
         self.session_maker = sessionmaker(target_engine, future=True)
+
+    def __del__(self) -> None:
+        print("QueryLogger.__del__")
 
     def listen(self, engine: Engine) -> None:
         event.listen(engine, "after_execute", self.after_execute)
@@ -106,6 +109,9 @@ class ChangeLogger:
     def __init__(self, target_engine: Engine) -> None:
         self.session_maker = sessionmaker(target_engine, future=True)
 
+    def __del__(self) -> None:
+        print("ChangeLogger.__del__")
+
     @staticmethod
     def _new_log(obj: Any, log_type: Literal["delete", "insert", "update"]) -> ChangeLog:
         diff = get_model_diff(obj)
@@ -115,8 +121,8 @@ class ChangeLogger:
             type=log_type,
         )
 
-    def listen(self, session_maker: sessionmaker) -> None:
-        event.listen(session_maker, "after_flush", self.after_flush)
+    def listen(self, session: Union[Session, sessionmaker]) -> None:
+        event.listen(session, "after_flush", self.after_flush)
 
     def after_flush(self, session: Session, _: UOWTransaction) -> None:
         with self.session_maker.begin() as target_session:  # type: ignore[no-untyped-call] # pylint: disable=no-member
