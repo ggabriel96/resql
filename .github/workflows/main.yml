@@ -59,14 +59,14 @@ jobs:
       - name: Black
         run: |
           source .venv/bin/activate
-          black --check resql/ tests/
+          black --check examples/ resql/ tests/
 
       - name: Mypy
         run: |
           source .venv/bin/activate
-          mypy resql/ tests/
+          mypy examples/ resql/ tests/
 
       - name: Pylint
         run: |
           source .venv/bin/activate
-          pylint resql/ tests/
+          pylint examples/ resql/ tests/
