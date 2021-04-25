@@ -4,9 +4,8 @@ from sqlalchemy.orm import declarative_base
 Base = declarative_base()
 
 
-class Person(Base):
-    __tablename__ = "person"
+class Country(Base):
+    __tablename__ = "country"
 
-    id = Column(Integer, primary_key=True)
-    age = Column(Integer)
-    name = Column(String, nullable=False)
+    name = Column(String, primary_key=True)
+    population = Column(Integer, nullable=True)

@@ -8,17 +8,11 @@ class Model(BaseModel):
         orm_mode = True
 
 
-class Person(Model):
-    id: int
-    age: Optional[int]
+class Country(Model):
     name: str
+    population: Optional[int]
 
 
-class PersonInsert(BaseModel):
-    age: Optional[int]
-    name: str
-
-
-class PersonUpdate(BaseModel):
-    age: Optional[int]
+class CountryUpdate(BaseModel):
     name: Optional[str]
+    population: Optional[int]
