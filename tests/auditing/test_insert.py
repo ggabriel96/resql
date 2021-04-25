@@ -17,7 +17,7 @@ def test_orm_insert_should_be_audited(
     now = dt.datetime.utcnow().replace(microsecond=0)
     dt_before = now - dt.timedelta(seconds=1)
     dt_after = now + dt.timedelta(seconds=1)
-    person = Person(name="Someone", age=25)
+    person_data = dict(name="Someone", age=25)
     expected_diff = dict(
         name=Diff(old=None, new="Someone"),
         age=Diff(old=None, new=25),
@@ -26,13 +26,17 @@ def test_orm_insert_should_be_audited(
     # Act
     log_changes(of=production_mksession, to=audit_engine)
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        person = Person(**person_data)  # type: ignore[arg-type]
         session.add(person)
 
-    # Assert
+    # Assert we didn't change the inserted object
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
-        inserted_people = session.execute(select(Person)).all()
+        inserted_people = session.execute(select(Person)).scalars().all()
         assert len(inserted_people) == 1
+        assert inserted_people[0].name == person_data["name"]
+        assert inserted_people[0].age == person_data["age"]
 
+    # Assert we audited the insert
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert len(change_logs) == 1
@@ -49,7 +53,7 @@ def test_many_orm_inserts_should_be_audited(
     now = dt.datetime.utcnow().replace(microsecond=0)
     dt_before = now - dt.timedelta(seconds=1)
     dt_after = now + dt.timedelta(seconds=1)
-    people = [Person(name="A", age=1), Person(name="B", age=2), Person(name="C", age=3)]
+    people_data = [dict(name="A", age=1), dict(name="B", age=2), dict(name="C", age=3)]
     expected_diffs = [
         dict(
             name=Diff(old=None, new="A"),
@@ -68,13 +72,21 @@ def test_many_orm_inserts_should_be_audited(
     # Act
     log_changes(of=production_mksession, to=audit_engine)
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        people = [Person(**data) for data in people_data]  # type: ignore[arg-type]
         session.add_all(people)
 
-    # Assert
+    # Assert we didn't change the inserted objects
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
-        inserted_people = session.execute(select(Person)).all()
+        inserted_people = session.execute(select(Person).order_by(Person.name)).scalars().all()
         assert len(inserted_people) == 3
+        assert inserted_people[0].name == people_data[0]["name"]
+        assert inserted_people[0].age == people_data[0]["age"]
+        assert inserted_people[1].name == people_data[1]["name"]
+        assert inserted_people[1].age == people_data[1]["age"]
+        assert inserted_people[2].name == people_data[2]["name"]
+        assert inserted_people[2].age == people_data[2]["age"]
 
+    # Assert we audited the inserts
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert len(change_logs) == 3
@@ -150,8 +162,10 @@ def test_core_insert_is_not_audited(
 
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
-        inserted_people = session.execute(select(Person)).all()
+        inserted_people = session.execute(select(Person)).scalars().all()
         assert len(inserted_people) == 1
+        assert inserted_people[0].name == person["name"]
+        assert inserted_people[0].age == person["age"]
 
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
@@ -172,8 +186,14 @@ def test_many_core_inserts_is_not_audited(
 
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
-        inserted_people = session.execute(select(Person)).all()
+        inserted_people = session.execute(select(Person)).scalars().all()
         assert len(inserted_people) == 3
+        assert inserted_people[0].name == people[0]["name"]
+        assert inserted_people[0].age == people[0]["age"]
+        assert inserted_people[1].name == people[1]["name"]
+        assert inserted_people[1].age == people[1]["age"]
+        assert inserted_people[2].name == people[2]["name"]
+        assert inserted_people[2].age == people[2]["age"]
 
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
@@ -193,8 +213,10 @@ def test_text_insert_is_not_audited(
 
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
-        inserted_people = session.execute(select(Person)).all()
+        inserted_people = session.execute(select(Person)).scalars().all()
         assert len(inserted_people) == 1
+        assert inserted_people[0].name == person["name"]
+        assert inserted_people[0].age == person["age"]
 
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
@@ -214,8 +236,14 @@ def test_many_text_inserts_is_not_audited(
 
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
-        inserted_people = session.execute(select(Person)).all()
+        inserted_people = session.execute(select(Person)).scalars().all()
         assert len(inserted_people) == 3
+        assert inserted_people[0].name == people[0]["name"]
+        assert inserted_people[0].age == people[0]["age"]
+        assert inserted_people[1].name == people[1]["name"]
+        assert inserted_people[1].age == people[1]["age"]
+        assert inserted_people[2].name == people[2]["name"]
+        assert inserted_people[2].age == people[2]["age"]
 
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
