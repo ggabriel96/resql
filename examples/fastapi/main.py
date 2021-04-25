@@ -6,7 +6,7 @@ from examples.fastapi.endpoints import countries
 from examples.fastapi.database import init_from_env
 from examples.fastapi.settings import get_environment
 
-app = FastAPI(name="example", version="0.1.0")
+app = FastAPI(title="Example", version="0.1.0")
 
 app.include_router(countries.router)
 
