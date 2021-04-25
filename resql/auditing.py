@@ -48,8 +48,10 @@ class QueryLogger:
             session.add(log)
 
 
-def log_queries(*, of: Engine, to: Engine) -> None:
-    QueryLogger(to).listen(of)
+def log_queries(*, of: Engine, to: Engine) -> QueryLogger:
+    query_logger = QueryLogger(to)
+    query_logger.listen(of)
+    return query_logger
 
 
 class Diff(TypedDict):
@@ -126,5 +128,7 @@ class ChangeLogger:
                 target_session.add(self._new_log(obj, "insert"))
 
 
-def log_changes(*, of: sessionmaker, to: Engine) -> None:
-    ChangeLogger(to).listen(of)
+def log_changes(*, of: sessionmaker, to: Engine) -> ChangeLogger:
+    change_logger = ChangeLogger(to)
+    change_logger.listen(of)
+    return change_logger
