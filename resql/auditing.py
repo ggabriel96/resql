@@ -134,7 +134,7 @@ class ChangeLogger:
                 target_session.add(self._new_log(obj, "insert"))
 
 
-def log_changes(*, of: sessionmaker, to: Engine) -> ChangeLogger:
+def log_changes(*, of: Union[Session, sessionmaker], to: Engine) -> ChangeLogger:
     change_logger = ChangeLogger(to)
     change_logger.listen(of)
     return change_logger
