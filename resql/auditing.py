@@ -18,6 +18,7 @@ from sqlalchemy.sql import Select
 from resql.models import ChangeLog, QueryLog
 
 
+@dataclass
 class QueryLogger:
     session_maker: sessionmaker
 
@@ -103,6 +104,7 @@ def get_model_diff(obj: Any) -> ModelDiff:
     return model_diff
 
 
+@dataclass
 class ChangeLogger:
     session_maker: sessionmaker
 
