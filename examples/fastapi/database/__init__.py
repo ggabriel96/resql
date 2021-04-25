@@ -1,5 +1,6 @@
 from typing import Iterator, Optional
 
+from fastapi import Header
 from sqlalchemy import create_engine
 from sqlalchemy.future import Engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -46,9 +47,9 @@ def init_from_env(env: Environment) -> None:
     log_queries(of=engines.production, to=engines.recovery)
 
 
-def begin_session() -> Iterator[Session]:
+def begin_session(user_agent: str = Header(...)) -> Iterator[Session]:
     global engines, session_maker  # pylint: disable=global-statement, invalid-name
     with session_maker.begin() as session:  # type: ignore # pylint: disable=no-member
         assert engines.audit is not None
-        log_changes(of=session, to=engines.audit)
+        log_changes(of=session, to=engines.audit, extra=dict(user_agent=user_agent))
         yield session

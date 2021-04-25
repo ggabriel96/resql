@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Iterator, Literal, TypedDict, Union
+from typing import Any, Iterator, Literal, Optional, TypedDict, Union
 
 from sqlalchemy import event, inspect
 from sqlalchemy.engine import CursorResult
@@ -107,19 +107,21 @@ def get_model_diff(obj: Any) -> ModelDiff:
 @dataclass
 class ChangeLogger:
     session_maker: sessionmaker
+    extra: Optional[dict[str, Any]] = None
 
-    def __init__(self, target_engine: Engine) -> None:
+    def __init__(self, target_engine: Engine, extra: Optional[dict[str, Any]] = None) -> None:
         self.session_maker = sessionmaker(target_engine, future=True)
+        self.extra = extra
 
     def __del__(self) -> None:
         print("ChangeLogger.__del__")
 
-    @staticmethod
-    def _new_log(obj: Any, log_type: Literal["delete", "insert", "update"]) -> ChangeLog:
+    def _new_log(self, obj: Any, log_type: Literal["delete", "insert", "update"]) -> ChangeLog:
         diff = get_model_diff(obj)
         return ChangeLog(
             table_name=getattr(obj, "__tablename__"),
             diff=diff.values,
+            extra=self.extra,
             type=log_type,
         )
 
@@ -136,7 +138,12 @@ class ChangeLogger:
                 target_session.add(self._new_log(obj, "insert"))
 
 
-def log_changes(*, of: Union[Session, sessionmaker], to: Engine) -> ChangeLogger:
-    change_logger = ChangeLogger(to)
+def log_changes(
+    *,
+    of: Union[Session, sessionmaker],
+    to: Engine,
+    extra: Optional[dict[str, Any]] = None,
+) -> ChangeLogger:
+    change_logger = ChangeLogger(to, extra=extra)
     change_logger.listen(of)
     return change_logger
