@@ -31,7 +31,12 @@ def insert(country_data: Country, db: Session = Depends(begin_session)) -> Count
     return Country.from_orm(country)
 
 
-@router.patch("/{country_name}", tags=["country"], response_model=Country)
+@router.patch(
+    "/{country_name}",
+    tags=["country"],
+    response_model=Country,
+    responses={status.HTTP_404_NOT_FOUND: {}},
+)
 def update(country_name: str, country_data: CountryUpdate, db: Session = Depends(begin_session)) -> Country:
     country = db.execute(select(DBCountry).where(DBCountry.name == country_name)).scalar_one()
     for key, value in country_data.dict(exclude_unset=True).items():

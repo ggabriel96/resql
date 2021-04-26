@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Iterator, Optional
 
 from fastapi import Header
@@ -12,6 +13,7 @@ from examples.fastapi.settings import Environment
 from examples.fastapi.database.models import Base as ProductionBase
 
 
+@dataclass
 class Engines:
     production: Optional[Engine] = None
     audit: Optional[Engine] = None
