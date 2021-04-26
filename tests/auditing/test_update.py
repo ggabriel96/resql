@@ -10,12 +10,11 @@ from tests.models import Person
 
 
 def test_orm_update_should_be_audited(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_now: dt.datetime, audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
 ) -> None:
     # Arrange
-    now = dt.datetime.utcnow().replace(microsecond=0)
-    dt_before = now - dt.timedelta(seconds=1)
-    dt_after = now + dt.timedelta(seconds=1)
+    dt_before = audit_now - dt.timedelta(seconds=1)
+    dt_after = audit_now + dt.timedelta(seconds=1)
     person = Person(name="Someone", age=25)
     expected_diff = dict(
         name=Diff(old="Someone", new="Someone Else"),

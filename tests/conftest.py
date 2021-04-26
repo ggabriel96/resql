@@ -1,3 +1,4 @@
+import datetime as dt
 from typing import Iterator
 
 from pytest import fixture
@@ -26,6 +27,13 @@ def _audit_engine(env: Environment) -> Engine:
     )
     AuditingBase.metadata.create_all(audit_engine)
     return audit_engine  # type: ignore[return-value]
+
+
+@fixture(name="audit_now", scope="session")
+def _audit_now(audit_engine: Engine) -> dt.datetime:
+    if "postgresql" in audit_engine.dialect.dialect_description:
+        return dt.datetime.now(dt.timezone.utc)
+    return dt.datetime.utcnow().replace(microsecond=0)
 
 
 @fixture(name="recovery_engine", scope="session")
