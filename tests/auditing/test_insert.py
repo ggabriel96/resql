@@ -297,9 +297,12 @@ def test_extra_field_is_reused_across_commits(
 def test_extra_field_is_saved_independently_for_concurrent_sessions(
     audit_now: dt.datetime, audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
 ) -> None:
+    # pylint: disable=too-many-locals
     # Arrange
     dt_before = audit_now - dt.timedelta(seconds=1)
     dt_after = audit_now + dt.timedelta(seconds=1)
+    extra_1 = dict(session_no=1)
+    extra_2 = dict(session_no=2)
     people = [dict(name="A", age=1), dict(name="B", age=2)]
     expected_diffs = [
         dict(
@@ -315,8 +318,8 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
     # Act
     with production_mksession.begin() as session_1:  # type: ignore[no-untyped-call]
         with production_mksession.begin() as session_2:  # type: ignore[no-untyped-call]
-            log_changes(of=session_1, to=audit_engine, extra=dict(session_no=1))
-            log_changes(of=session_2, to=audit_engine, extra=dict(session_no=2))
+            log_changes(of=session_1, to=audit_engine, extra=copy.deepcopy(extra_1))
+            log_changes(of=session_2, to=audit_engine, extra=copy.deepcopy(extra_2))
             session_1.add(Person(**people[0]))  # type: ignore[arg-type]
             session_2.add(Person(**people[1]))  # type: ignore[arg-type]
 
@@ -338,5 +341,5 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
         assert change_logs[1].table_name == Person.__tablename__
         assert change_logs[0].diff == expected_diffs[0]
         assert change_logs[1].diff == expected_diffs[1]
-        assert change_logs[0].extra == dict(session_no=1)
-        assert change_logs[1].extra == dict(session_no=2)
+        assert change_logs[0].extra == extra_1
+        assert change_logs[1].extra == extra_2
