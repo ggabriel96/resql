@@ -43,7 +43,9 @@ def test_orm_insert_should_be_audited(
 
     # Assert we audited the insert
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
-        change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+        change_logs = (
+            audit_session.execute(select(ChangeLog).order_by(ChangeLog.diff["name"]["new"].as_string())).scalars().all()
+        )
         assert len(change_logs) == 1
         assert change_logs[0].type == "insert"
         assert dt_before <= change_logs[0].executed_at <= dt_after
@@ -87,7 +89,9 @@ def test_many_orm_inserts_should_be_audited(
 
     # Assert we audited the inserts
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
-        change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+        change_logs = (
+            audit_session.execute(select(ChangeLog).order_by(ChangeLog.diff["name"]["new"].as_string())).scalars().all()
+        )
         assert len(change_logs) == 3
         assert change_logs[0].type == "insert"
         assert change_logs[1].type == "insert"
@@ -323,7 +327,7 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
 
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = (
-            audit_session.execute(select(ChangeLog).order_by(ChangeLog.extra["session_no"].as_string())).scalars().all()
+            audit_session.execute(select(ChangeLog).order_by(ChangeLog.diff["name"]["new"].as_string())).scalars().all()
         )
         assert len(change_logs) == 2
         assert change_logs[0].type == "insert"
