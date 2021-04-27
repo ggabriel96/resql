@@ -1,5 +1,6 @@
 import copy
 import datetime as dt
+from typing import Any
 
 import pytest
 from sqlalchemy import insert, select, text
@@ -11,13 +12,20 @@ from resql.models import ChangeLog
 from tests.models import Person
 
 
+def assert_inserted_people_data(inserted_people: list[Person], expected_people: list[dict[str, Any]]) -> None:
+    assert len(inserted_people) == len(expected_people)
+    for inserted, expected in zip(inserted_people, expected_people):
+        assert inserted.name == expected["name"]
+        assert inserted.age == expected["age"]
+
+
 def test_orm_insert_should_be_audited(
     audit_now: dt.datetime, audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
 ) -> None:
     # Arrange
     dt_before = audit_now - dt.timedelta(seconds=1)
     dt_after = audit_now + dt.timedelta(seconds=1)
-    person_data = dict(name="Someone", age=25)
+    person = dict(name="Someone", age=25)
     expected_diff = dict(
         name=Diff(old=None, new="Someone"),
         age=Diff(old=None, new=25),
@@ -26,15 +34,12 @@ def test_orm_insert_should_be_audited(
     # Act
     log_changes(of=production_mksession, to=audit_engine)
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
-        person = Person(**person_data)  # type: ignore[arg-type]
-        session.add(person)
+        session.add(Person(**person))  # type: ignore[arg-type]
 
     # Assert we didn't change the inserted object
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         inserted_people = session.execute(select(Person)).scalars().all()
-        assert len(inserted_people) == 1
-        assert inserted_people[0].name == person_data["name"]
-        assert inserted_people[0].age == person_data["age"]
+        assert_inserted_people_data(inserted_people, [person])
 
     # Assert we audited the insert
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
@@ -78,13 +83,7 @@ def test_many_orm_inserts_should_be_audited(
     # Assert we didn't change the inserted objects
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         inserted_people = session.execute(select(Person).order_by(Person.name)).scalars().all()
-        assert len(inserted_people) == 3
-        assert inserted_people[0].name == people_data[0]["name"]
-        assert inserted_people[0].age == people_data[0]["age"]
-        assert inserted_people[1].name == people_data[1]["name"]
-        assert inserted_people[1].age == people_data[1]["age"]
-        assert inserted_people[2].name == people_data[2]["name"]
-        assert inserted_people[2].age == people_data[2]["age"]
+        assert_inserted_people_data(inserted_people, people_data)
 
     # Assert we audited the inserts
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
@@ -166,9 +165,7 @@ def test_core_insert_is_not_audited(
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         inserted_people = session.execute(select(Person)).scalars().all()
-        assert len(inserted_people) == 1
-        assert inserted_people[0].name == person["name"]
-        assert inserted_people[0].age == person["age"]
+        assert_inserted_people_data(inserted_people, [person])
 
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
@@ -189,14 +186,8 @@ def test_many_core_inserts_is_not_audited(
 
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
-        inserted_people = session.execute(select(Person)).scalars().all()
-        assert len(inserted_people) == 3
-        assert inserted_people[0].name == people[0]["name"]
-        assert inserted_people[0].age == people[0]["age"]
-        assert inserted_people[1].name == people[1]["name"]
-        assert inserted_people[1].age == people[1]["age"]
-        assert inserted_people[2].name == people[2]["name"]
-        assert inserted_people[2].age == people[2]["age"]
+        inserted_people = session.execute(select(Person).order_by(Person.name)).scalars().all()
+        assert_inserted_people_data(inserted_people, people)
 
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
@@ -217,9 +208,7 @@ def test_text_insert_is_not_audited(
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         inserted_people = session.execute(select(Person)).scalars().all()
-        assert len(inserted_people) == 1
-        assert inserted_people[0].name == person["name"]
-        assert inserted_people[0].age == person["age"]
+        assert_inserted_people_data(inserted_people, [person])
 
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
@@ -240,13 +229,7 @@ def test_many_text_inserts_is_not_audited(
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         inserted_people = session.execute(select(Person)).scalars().all()
-        assert len(inserted_people) == 3
-        assert inserted_people[0].name == people[0]["name"]
-        assert inserted_people[0].age == people[0]["age"]
-        assert inserted_people[1].name == people[1]["name"]
-        assert inserted_people[1].age == people[1]["age"]
-        assert inserted_people[2].name == people[2]["name"]
-        assert inserted_people[2].age == people[2]["age"]
+        assert_inserted_people_data(inserted_people, people)
 
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
@@ -313,8 +296,7 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
     # Arrange
     dt_before = audit_now - dt.timedelta(seconds=1)
     dt_after = audit_now + dt.timedelta(seconds=1)
-    person_1 = dict(name="A", age=1)
-    person_2 = dict(name="B", age=2)
+    people = [dict(name="A", age=1), dict(name="B", age=2)]
     expected_diffs = [
         dict(
             name=Diff(old=None, new="A"),
@@ -331,17 +313,13 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
         with production_mksession.begin() as session_2:  # type: ignore[no-untyped-call]
             log_changes(of=session_1, to=audit_engine, extra=dict(session_no=1))
             log_changes(of=session_2, to=audit_engine, extra=dict(session_no=2))
-            session_1.add(Person(**person_1))  # type: ignore[arg-type]
-            session_2.add(Person(**person_2))  # type: ignore[arg-type]
+            session_1.add(Person(**people[0]))  # type: ignore[arg-type]
+            session_2.add(Person(**people[1]))  # type: ignore[arg-type]
 
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         inserted_people = session.execute(select(Person).order_by(Person.name)).scalars().all()
-        assert len(inserted_people) == 2
-        assert inserted_people[0].name == person_1["name"]
-        assert inserted_people[0].age == person_1["age"]
-        assert inserted_people[1].name == person_2["name"]
-        assert inserted_people[1].age == person_2["age"]
+        assert_inserted_people_data(inserted_people, people)
 
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = (
