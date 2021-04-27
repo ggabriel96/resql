@@ -43,6 +43,7 @@ def test_orm_insert_should_be_audited(
         assert dt_before <= change_logs[0].executed_at <= dt_after
         assert change_logs[0].table_name == Person.__tablename__
         assert change_logs[0].diff == expected_diff
+        assert change_logs[0].extra is None
 
 
 def test_many_orm_inserts_should_be_audited(
@@ -100,6 +101,9 @@ def test_many_orm_inserts_should_be_audited(
         assert change_logs[0].diff == expected_diffs[0]
         assert change_logs[1].diff == expected_diffs[1]
         assert change_logs[2].diff == expected_diffs[2]
+        assert change_logs[0].extra is None
+        assert change_logs[1].extra is None
+        assert change_logs[2].extra is None
 
 
 def test_rolled_back_orm_insert_should_not_be_audited(
