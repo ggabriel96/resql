@@ -30,7 +30,14 @@ jobs:
       - name: Run tests
         run: |
           source .venv/bin/activate
-          pytest tests/
+          pytest --cov=resql/ --cov-report=xml tests/
+
+      # move to https://github.com/codecov/codecov-action in the future
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage.xml
+          path: coverage.xml
 
   lint:
     runs-on: ubuntu-latest
