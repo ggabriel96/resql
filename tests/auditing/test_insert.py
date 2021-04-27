@@ -246,3 +246,56 @@ def test_many_text_inserts_is_not_audited(
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert change_logs == []
+
+
+def test_extra_field_is_saved_independently_for_concurrent_sessions(
+    audit_now: dt.datetime, audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+) -> None:
+    # Arrange
+    dt_before = audit_now - dt.timedelta(seconds=1)
+    dt_after = audit_now + dt.timedelta(seconds=1)
+    person_1 = dict(name="A", age=1)
+    person_2 = dict(name="B", age=2)
+    expected_diffs = [
+        dict(
+            name=Diff(old=None, new="A"),
+            age=Diff(old=None, new=1),
+        ),
+        dict(
+            name=Diff(old=None, new="B"),
+            age=Diff(old=None, new=2),
+        ),
+    ]
+
+    # Act
+    with production_mksession.begin() as session_1:  # type: ignore[no-untyped-call]
+        with production_mksession.begin() as session_2:  # type: ignore[no-untyped-call]
+            log_changes(of=session_1, to=audit_engine, extra=dict(session_no=1))
+            log_changes(of=session_2, to=audit_engine, extra=dict(session_no=2))
+            session_1.add(Person(**person_1))  # type: ignore[arg-type]
+            session_2.add(Person(**person_2))  # type: ignore[arg-type]
+
+    # Assert
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        inserted_people = session.execute(select(Person).order_by(Person.name)).scalars().all()
+        assert len(inserted_people) == 2
+        assert inserted_people[0].name == person_1["name"]
+        assert inserted_people[0].age == person_1["age"]
+        assert inserted_people[1].name == person_2["name"]
+        assert inserted_people[1].age == person_2["age"]
+
+    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+        change_logs = (
+            audit_session.execute(select(ChangeLog).order_by(ChangeLog.extra["session_no"].as_string())).scalars().all()
+        )
+        assert len(change_logs) == 2
+        assert change_logs[0].type == "insert"
+        assert change_logs[1].type == "insert"
+        assert dt_before <= change_logs[0].executed_at <= dt_after
+        assert dt_before <= change_logs[1].executed_at <= dt_after
+        assert change_logs[0].table_name == Person.__tablename__
+        assert change_logs[1].table_name == Person.__tablename__
+        assert change_logs[0].diff == expected_diffs[0]
+        assert change_logs[1].diff == expected_diffs[1]
+        assert change_logs[0].extra == dict(session_no=1)
+        assert change_logs[1].extra == dict(session_no=2)
