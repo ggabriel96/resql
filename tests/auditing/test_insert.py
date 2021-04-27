@@ -232,7 +232,7 @@ def test_many_text_inserts_is_not_audited(
 
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
-        inserted_people = session.execute(select(Person)).scalars().all()
+        inserted_people = session.execute(select(Person).order_by(Person.name)).scalars().all()
         assert_inserted_people_data(inserted_people, people)
 
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
