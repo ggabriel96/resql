@@ -21,15 +21,17 @@ from resql.models import ChangeLog, QueryLog
 @dataclass
 class QueryLogger:
     session_maker: sessionmaker
+    extra: Optional[dict[str, Any]] = None
 
-    def __init__(self, target_engine: Engine) -> None:
+    def __init__(self, target_engine: Engine, extra: Optional[dict[str, Any]] = None) -> None:
         self.session_maker = sessionmaker(target_engine, future=True)
+        self.extra = extra
 
     def __del__(self) -> None:
         print("QueryLogger.__del__")
 
-    def listen(self, engine: Engine) -> None:
-        event.listen(engine, "after_execute", self.after_execute)
+    def listen(self, connection: Union[Engine, Connection]) -> None:
+        event.listen(connection, "after_execute", self.after_execute)
 
     def after_execute(  # pylint: disable=too-many-arguments,unused-argument
         self,
@@ -45,6 +47,7 @@ class QueryLogger:
         with self.session_maker.begin() as session:  # type: ignore[no-untyped-call] # pylint: disable=no-member
             log = QueryLog(
                 dialect_description=conn.dialect.dialect_description,
+                extra=self.extra,
                 statement=str(result.context.compiled),
                 parameters=result.context.compiled_parameters,
                 type=type(clauseelement).__name__,
@@ -52,8 +55,13 @@ class QueryLogger:
             session.add(log)
 
 
-def log_queries(*, of: Engine, to: Engine) -> QueryLogger:
-    query_logger = QueryLogger(to)
+def log_queries(
+    *,
+    of: Union[Engine, Connection],
+    to: Engine,
+    extra: Optional[dict[str, Any]] = None,
+) -> QueryLogger:
+    query_logger = QueryLogger(to, extra=extra)
     query_logger.listen(of)
     return query_logger
 

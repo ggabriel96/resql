@@ -23,6 +23,7 @@ class QueryLog(RecoveryBase):
     id = Column(Integer, primary_key=True)
     dialect_description = Column(String(64), nullable=False)
     executed_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    extra = Column(JSON, nullable=True)
     parameters = Column(JSON, nullable=True)
     statement = Column(Text, nullable=False)
     type = Column(String(32), nullable=False)
