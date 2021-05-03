@@ -24,6 +24,7 @@ def test_extra_field_is_reused_across_commits_on_same_engine(
     with production_engine.connect() as conn:  # type: ignore[no-untyped-call]
         log_queries(of=conn, to=recovery_engine, extra=copy.deepcopy(extra))
         conn.execute(insert(Person).values(**person_1))
+        conn.commit()
         conn.execute(insert(Person).values(**person_2))
         conn.commit()
 
