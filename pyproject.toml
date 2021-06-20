@@ -9,7 +9,7 @@ python = "^3.9"
 sqlalchemy = "^1.4.11"
 
 [tool.poetry.dev-dependencies]
-black = "^20.8b1"
+black = "^21.6b0"
 mypy = "^0.812"
 pylint = "^2.7.4"
 sqlalchemy2-stubs = "^0.0.1-alpha.4"
