@@ -29,9 +29,7 @@ jobs:
         run: poetry install --no-interaction
 
       - name: Run tests
-        run: |
-          source .venv/bin/activate
-          pytest --cov=resql/ --cov-report=xml tests/
+        run: poetry run pytest --cov=resql/ --cov-report=xml tests/
 
       # move to https://github.com/codecov/codecov-action in the future
       - name: Upload coverage report
@@ -66,16 +64,10 @@ jobs:
         run: poetry install --no-interaction
 
       - name: Black
-        run: |
-          source .venv/bin/activate
-          black --check examples/ resql/ tests/
+        run: poetry run black --check examples/ resql/ tests/
 
       - name: Mypy
-        run: |
-          source .venv/bin/activate
-          mypy examples/ resql/ tests/
+        run: poetry run mypy examples/ resql/ tests/
 
       - name: Pylint
-        run: |
-          source .venv/bin/activate
-          pylint examples/ resql/ tests/
+        run: poetry run pylint examples/ resql/ tests/
