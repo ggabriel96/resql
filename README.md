@@ -1,5 +1,7 @@
 # resql
 
+[![codecov](https://codecov.io/gh/ggabriel96/resql/branch/main/graph/badge.svg?token=AOVOWTNSMW)](https://codecov.io/gh/ggabriel96/resql)
+
 resql (pronounced like "rescue") is a database auditing and recovery library based on SQLAlchemy.
 It mainly provides two things: a way to register changes to objects (the change log), and a way to register executed queries (the query log).
 
