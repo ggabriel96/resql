@@ -66,6 +66,9 @@ jobs:
       - name: Black
         run: poetry run black --check --verbose examples/ resql/ tests/
 
+      - name: isort
+        run: poetry run isort --check-only --verbose examples/ resql/ tests/
+
       - name: Mypy
         run: poetry run mypy --verbose examples/ resql/ tests/
 
