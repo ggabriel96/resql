@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "resql"
 version = "0.1.0"
-description = ""
+description = "A database auditing and recovery library based on SQLAlchemy"
 authors = ["Gabriel Galli <ggabriel96@hotmail.com>"]
 
 [tool.poetry.dependencies]
