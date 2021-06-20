@@ -18,19 +18,3 @@ repos:
     rev: 20.8b1
     hooks:
       - id: black
-  - repo: local
-    hooks:
-      - id: mypy
-        name: mypy
-        language: system
-        types: [python]
-        entry: python -m mypy
-        pass_filenames: true
-  - repo: local
-    hooks:
-      - id: pylint
-        name: pylint
-        language: system
-        types: [python]
-        entry: python -m pylint
-        pass_filenames: true
