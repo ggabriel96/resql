@@ -6,11 +6,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.future import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from examples.fastapi.database.models import Base as ProductionBase
+from examples.fastapi.settings import Environment
 from resql.auditing import log_changes, log_queries
 from resql.models import AuditingBase, RecoveryBase
-
-from examples.fastapi.settings import Environment
-from examples.fastapi.database.models import Base as ProductionBase
 
 
 @dataclass

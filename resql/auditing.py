@@ -4,14 +4,7 @@ from typing import Any, Iterator, Literal, Optional, TypedDict, Union
 from sqlalchemy import event, inspect
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.future import Connection, Engine
-from sqlalchemy.orm import (
-    sessionmaker,
-    InstanceState,
-    ColumnProperty,
-    Session,
-    UOWTransaction,
-    attributes,
-)
+from sqlalchemy.orm import ColumnProperty, InstanceState, Session, UOWTransaction, attributes, sessionmaker
 from sqlalchemy.orm.exc import UnmappedColumnError
 from sqlalchemy.sql import Select
 

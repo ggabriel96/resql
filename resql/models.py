@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Integer, JSON, String, Text, func
+from sqlalchemy import JSON, Column, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import declarative_base
 
 AuditingBase = declarative_base()

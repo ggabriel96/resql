@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from sqlalchemy.exc import NoResultFound
 
 from examples.fastapi import error_handlers
-from examples.fastapi.endpoints import countries
 from examples.fastapi.database import init_from_env
+from examples.fastapi.endpoints import countries
 from examples.fastapi.settings import get_environment
 
 app = FastAPI(title="Example", version="0.1.0")

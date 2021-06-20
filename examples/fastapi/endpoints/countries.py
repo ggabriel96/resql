@@ -6,7 +6,6 @@ from examples.fastapi.database import begin_session
 from examples.fastapi.database.models import Country as DBCountry
 from examples.fastapi.models import Country, CountryUpdate
 
-
 router = APIRouter(prefix="/countries")
 
 
