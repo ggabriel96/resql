@@ -1,5 +1,6 @@
 # resql
 
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![codecov](https://codecov.io/gh/ggabriel96/resql/branch/main/graph/badge.svg?token=AOVOWTNSMW)](https://codecov.io/gh/ggabriel96/resql)
 
 resql (pronounced like "rescue") is a database auditing and recovery library based on SQLAlchemy.
