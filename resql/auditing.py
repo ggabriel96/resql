@@ -9,6 +9,7 @@ from sqlalchemy.orm.exc import UnmappedColumnError
 from sqlalchemy.sql import Select
 
 from resql.models import ChangeLog, QueryLog
+from tests.utils import now_in_utc
 
 
 @dataclass
@@ -40,6 +41,7 @@ class QueryLogger:
         with self.session_maker.begin() as session:  # type: ignore[no-untyped-call] # pylint: disable=no-member
             log = QueryLog(
                 dialect_description=conn.dialect.dialect_description,
+                executed_at=now_in_utc(),
                 extra=self.extra,
                 statement=str(result.context.compiled),
                 parameters=result.context.compiled_parameters,
@@ -122,6 +124,7 @@ class ChangeLogger:
         return ChangeLog(
             table_name=getattr(obj, "__tablename__"),
             diff=diff.values,
+            executed_at=now_in_utc(),
             extra=self.extra,
             record_id=getattr(obj, "id"),
             type=log_type,
