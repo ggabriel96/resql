@@ -7,14 +7,16 @@ from sqlalchemy.orm import sessionmaker
 from resql.auditing import Diff, log_changes
 from resql.models import ChangeLog
 from tests.models import Person
+from tests.utils import now_in_utc
 
 
 def test_orm_update_should_be_audited(
-    audit_now: dt.datetime, audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
 ) -> None:
     # Arrange
-    dt_before = audit_now - dt.timedelta(seconds=1)
-    dt_after = audit_now + dt.timedelta(seconds=1)
+    now = now_in_utc()
+    dt_before = now - dt.timedelta(seconds=1)
+    dt_after = now + dt.timedelta(seconds=1)
     person = Person(name="Someone", age=25)
     expected_diff = dict(
         name=Diff(old="Someone", new="Someone Else"),

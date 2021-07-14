@@ -1,5 +1,11 @@
+import datetime as dt
+
 from sqlalchemy import MetaData
 from sqlalchemy.future import Engine
+
+
+def now_in_utc() -> dt.datetime:
+    return dt.datetime.now(tz=dt.timezone.utc)
 
 
 def truncate_all(engine: Engine) -> None:

@@ -1,4 +1,3 @@
-import datetime as dt
 from typing import Iterator
 
 from pytest import fixture
@@ -30,13 +29,6 @@ def _audit_engine(env: Environment) -> Iterator[Engine]:
     truncate_all(audit_engine)  # type: ignore[arg-type]
 
 
-@fixture(name="audit_now", scope="function")
-def _audit_now(audit_engine: Engine) -> dt.datetime:
-    if "postgresql" in audit_engine.dialect.dialect_description:
-        return dt.datetime.now(dt.timezone.utc)
-    return dt.datetime.utcnow().replace(microsecond=0)
-
-
 @fixture(name="recovery_engine", scope="function")
 def _recovery_engine(env: Environment) -> Iterator[Engine]:
     recovery_engine = create_engine(
@@ -48,13 +40,6 @@ def _recovery_engine(env: Environment) -> Iterator[Engine]:
     RecoveryBase.metadata.create_all(recovery_engine)
     yield recovery_engine  # type: ignore[misc]
     truncate_all(recovery_engine)  # type: ignore[arg-type]
-
-
-@fixture(name="recovery_now", scope="function")
-def _recovery_now(recovery_engine: Engine) -> dt.datetime:
-    if "postgresql" in recovery_engine.dialect.dialect_description:
-        return dt.datetime.now(dt.timezone.utc)
-    return dt.datetime.utcnow().replace(microsecond=0)
 
 
 @fixture(name="production_engine", scope="function")

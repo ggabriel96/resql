@@ -8,14 +8,16 @@ from sqlalchemy.orm import sessionmaker
 from resql.auditing import log_queries
 from resql.models import QueryLog
 from tests.models import Person
+from tests.utils import now_in_utc
 
 
 def test_extra_field_is_reused_across_commits_on_same_engine(
-    recovery_now: dt.datetime, recovery_engine: Engine, production_engine: Engine, recovery_mksession: sessionmaker
+    recovery_engine: Engine, production_engine: Engine, recovery_mksession: sessionmaker
 ) -> None:
-    # Arrange
-    dt_before = recovery_now - dt.timedelta(seconds=1)
-    dt_after = recovery_now + dt.timedelta(seconds=1)
+    #
+    now = now_in_utc()
+    dt_before = now - dt.timedelta(seconds=1)
+    dt_after = now + dt.timedelta(seconds=1)
     extra = dict(user_agent="testing")
     person_1 = dict(name="A", age=1)
     person_2 = dict(name="B", age=2)
@@ -47,11 +49,12 @@ def test_extra_field_is_reused_across_commits_on_same_engine(
 
 
 def test_extra_field_is_saved_independently_for_concurrent_connections(
-    recovery_now: dt.datetime, recovery_engine: Engine, production_engine: Engine, recovery_mksession: sessionmaker
+    recovery_engine: Engine, production_engine: Engine, recovery_mksession: sessionmaker
 ) -> None:
     # Arrange
-    dt_before = recovery_now - dt.timedelta(seconds=1)
-    dt_after = recovery_now + dt.timedelta(seconds=1)
+    now = now_in_utc()
+    dt_before = now - dt.timedelta(seconds=1)
+    dt_after = now + dt.timedelta(seconds=1)
     extra_1 = dict(session_no=1)
     extra_2 = dict(session_no=2)
     people = [dict(name="A", age=1), dict(name="B", age=2)]

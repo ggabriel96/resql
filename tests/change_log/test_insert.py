@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker
 from resql.auditing import Diff, log_changes
 from resql.models import ChangeLog
 from tests.models import Person
+from tests.utils import now_in_utc
 
 
 def assert_inserted_people_data(inserted_people: list[Person], expected_people: list[dict[str, Any]]) -> None:
@@ -20,11 +21,12 @@ def assert_inserted_people_data(inserted_people: list[Person], expected_people: 
 
 
 def test_orm_insert_should_be_audited(
-    audit_now: dt.datetime, audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
 ) -> None:
     # Arrange
-    dt_before = audit_now - dt.timedelta(seconds=1)
-    dt_after = audit_now + dt.timedelta(seconds=1)
+    now = now_in_utc()
+    dt_before = now - dt.timedelta(seconds=1)
+    dt_after = now + dt.timedelta(seconds=1)
     person = dict(name="Someone", age=25)
     expected_diff = dict(
         name=Diff(old=None, new="Someone"),
@@ -55,11 +57,12 @@ def test_orm_insert_should_be_audited(
 
 
 def test_many_orm_inserts_should_be_audited(
-    audit_now: dt.datetime, audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
 ) -> None:
     # Arrange
-    dt_before = audit_now - dt.timedelta(seconds=1)
-    dt_after = audit_now + dt.timedelta(seconds=1)
+    now = now_in_utc()
+    dt_before = now - dt.timedelta(seconds=1)
+    dt_after = now + dt.timedelta(seconds=1)
     people_data = [dict(name="A", age=1), dict(name="B", age=2), dict(name="C", age=3)]
     expected_diffs = [
         dict(
@@ -241,11 +244,12 @@ def test_many_text_inserts_is_not_audited(
 
 
 def test_extra_field_is_reused_across_commits(
-    audit_now: dt.datetime, audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
 ) -> None:
     # Arrange
-    dt_before = audit_now - dt.timedelta(seconds=1)
-    dt_after = audit_now + dt.timedelta(seconds=1)
+    now = now_in_utc()
+    dt_before = now - dt.timedelta(seconds=1)
+    dt_after = now + dt.timedelta(seconds=1)
     extra = dict(user_agent="testing")
     person_1 = dict(name="A", age=1)
     person_2 = dict(name="B", age=2)
@@ -295,12 +299,13 @@ def test_extra_field_is_reused_across_commits(
 
 
 def test_extra_field_is_saved_independently_for_concurrent_sessions(
-    audit_now: dt.datetime, audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
 ) -> None:
     # pylint: disable=too-many-locals
     # Arrange
-    dt_before = audit_now - dt.timedelta(seconds=1)
-    dt_after = audit_now + dt.timedelta(seconds=1)
+    now = now_in_utc()
+    dt_before = now - dt.timedelta(seconds=1)
+    dt_after = now + dt.timedelta(seconds=1)
     extra_1 = dict(session_no=1)
     extra_2 = dict(session_no=2)
     people = [dict(name="A", age=1), dict(name="B", age=2)]
