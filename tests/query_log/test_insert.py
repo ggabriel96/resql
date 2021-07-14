@@ -6,7 +6,7 @@ from sqlalchemy.future import Engine
 from sqlalchemy.orm import sessionmaker
 
 from resql.auditing import log_queries
-from resql.models import QueryLog
+from resql.query_log import QueryLog
 from tests.models import Person
 from tests.utils import now_in_utc
 

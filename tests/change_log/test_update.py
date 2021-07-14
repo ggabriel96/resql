@@ -5,7 +5,7 @@ from sqlalchemy.future import Engine
 from sqlalchemy.orm import sessionmaker
 
 from resql.auditing import Diff, log_changes
-from resql.models import ChangeLog
+from resql.change_log import ChangeLog
 from tests.models import Person
 from tests.utils import now_in_utc
 

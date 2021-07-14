@@ -22,11 +22,14 @@ It currently registers the following information:
 - the date and time of the change
 - any extra information provided during setup
 
-To setup change logs, simply call `log_changes`:
+To setup change logs, first map the database table to the respective Python class (via `map_default` in this example).
+Then, simply call `log_changes`:
 
 ```python
 from resql.auditing import log_changes
+from resql.change_log import map_default
 
+audit_registry = map_default()
 log_changes(of=session, to=audit_engine)
 ```
 
@@ -56,11 +59,14 @@ In order to do this, it registers the following information:
 
 With this data, one should be able to programmatically re-run these queries again from a given starting point.
 
-To setup query logs, simply call `log_queries`:
+To setup query logs, first map the database table to the respective Python class (via `map_default` in this example).
+Then, simply call `log_queries`:
 
 ```python
 from resql.auditing import log_queries
+from resql.query_log import map_default
 
+recovery_registry = map_default()
 log_queries(of=production_engine, to=recovery_engine)
 ```
 

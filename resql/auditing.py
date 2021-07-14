@@ -2,13 +2,13 @@ from dataclasses import dataclass
 from typing import Any, Iterator, Literal, Optional, TypedDict, Union
 
 from sqlalchemy import event, inspect
-from sqlalchemy.engine import CursorResult
-from sqlalchemy.future import Connection, Engine
+from sqlalchemy.engine import CursorResult, Connection, Engine
 from sqlalchemy.orm import ColumnProperty, InstanceState, Session, UOWTransaction, attributes, sessionmaker
 from sqlalchemy.orm.exc import UnmappedColumnError
 from sqlalchemy.sql import Select
 
-from resql.models import ChangeLog, QueryLog
+from resql.change_log import ChangeLog
+from resql.query_log import QueryLog
 from tests.utils import now_in_utc
 
 

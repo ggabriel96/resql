@@ -1,7 +1,9 @@
 import datetime as dt
+from dataclasses import dataclass
 
 from sqlalchemy import MetaData
 from sqlalchemy.future import Engine
+from sqlalchemy.orm import registry
 
 
 def now_in_utc() -> dt.datetime:
@@ -14,3 +16,9 @@ def truncate_all(engine: Engine) -> None:
     with engine.begin() as conn:  # type: ignore[no-untyped-call]
         for table in reversed(meta.sorted_tables):
             conn.execute(table.delete())
+
+
+@dataclass
+class Registries:
+    audit: registry
+    recovery: registry
