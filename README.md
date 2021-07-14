@@ -16,7 +16,7 @@ As the name implies, the change log focuses on establishing a complete history o
 It currently registers the following information:
 
 - the name of the table in which it occurred
-- the primary key (PK) of the object that changed (in JSON, so we support generic PKs)
+- the primary key (PK) of the object that changed (just an integer, so that's a required column)
 - the diff of the change, in JSON
 - the type of the change (insert, update, or delete)
 - the date and time of the change

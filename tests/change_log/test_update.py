@@ -50,6 +50,8 @@ def test_orm_update_should_be_audited(
         assert dt_before <= change_logs[0].executed_at <= dt_after
         assert change_logs[0].table_name == Person.__tablename__
         assert change_logs[0].diff == expected_diff
+        assert change_logs[0].extra is None
+        assert change_logs[0].record_id == person.id
 
 
 def test_orm_enabled_update_statement_is_not_audited(

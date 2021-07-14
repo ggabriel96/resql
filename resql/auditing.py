@@ -105,11 +105,6 @@ def get_model_diff(obj: Any) -> ModelDiff:
     return model_diff
 
 
-def get_pk_dict(obj: Any) -> dict[str, Any]:
-    table = obj.__table__
-    return {column.name: getattr(obj, column.name) for column in table.primary_key.columns}
-
-
 @dataclass
 class ChangeLogger:
     session_maker: sessionmaker
@@ -128,7 +123,7 @@ class ChangeLogger:
             table_name=getattr(obj, "__tablename__"),
             diff=diff.values,
             extra=self.extra,
-            primary_key=get_pk_dict(obj),
+            record_id=getattr(obj, "id"),
             type=log_type,
         )
 

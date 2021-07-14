@@ -27,7 +27,7 @@ def test_orm_insert_should_be_audited(
     now = now_in_utc()
     dt_before = now - dt.timedelta(seconds=1)
     dt_after = now + dt.timedelta(seconds=1)
-    person = dict(name="Someone", age=25)
+    person_data = dict(name="Someone", age=25)
     expected_diff = dict(
         name=Diff(old=None, new="Someone"),
         age=Diff(old=None, new=25),
@@ -36,12 +36,13 @@ def test_orm_insert_should_be_audited(
     # Act
     log_changes(of=production_mksession, to=audit_engine)
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
-        session.add(Person(**person))  # type: ignore[arg-type]
+        person = Person(**person_data)  # type: ignore[arg-type]
+        session.add(person)
 
     # Assert we didn't change the inserted object
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         inserted_people = session.execute(select(Person)).scalars().all()
-        assert_inserted_people_data(inserted_people, [person])
+        assert_inserted_people_data(inserted_people, [person_data])
 
     # Assert we audited the insert
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
@@ -54,6 +55,7 @@ def test_orm_insert_should_be_audited(
         assert change_logs[0].table_name == Person.__tablename__
         assert change_logs[0].diff == expected_diff
         assert change_logs[0].extra is None
+        assert change_logs[0].record_id == person.id
 
 
 def test_many_orm_inserts_should_be_audited(
@@ -111,6 +113,9 @@ def test_many_orm_inserts_should_be_audited(
         assert change_logs[0].extra is None
         assert change_logs[1].extra is None
         assert change_logs[2].extra is None
+        assert change_logs[0].record_id == people[0].id
+        assert change_logs[1].record_id == people[1].id
+        assert change_logs[2].record_id == people[2].id
 
 
 def test_rolled_back_orm_insert_should_not_be_audited(
@@ -247,12 +252,13 @@ def test_extra_field_is_reused_across_commits(
     audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
 ) -> None:
     # Arrange
+    # pylint: disable=too-many-locals
     now = now_in_utc()
     dt_before = now - dt.timedelta(seconds=1)
     dt_after = now + dt.timedelta(seconds=1)
     extra = dict(user_agent="testing")
-    person_1 = dict(name="A", age=1)
-    person_2 = dict(name="B", age=2)
+    person_1_data = dict(name="A", age=1)
+    person_2_data = dict(name="B", age=2)
     expected_diffs = [
         dict(
             name=Diff(old=None, new="A"),
@@ -267,19 +273,22 @@ def test_extra_field_is_reused_across_commits(
     # Act
     with production_mksession() as session:
         log_changes(of=session, to=audit_engine, extra=copy.deepcopy(extra))
-        session.add(Person(**person_1))  # type: ignore[arg-type]
+        person_1 = Person(**person_1_data)  # type: ignore[arg-type]
+        session.add(person_1)
         session.commit()
-        session.add(Person(**person_2))  # type: ignore[arg-type]
+
+        person_2 = Person(**person_2_data)  # type: ignore[arg-type]
+        session.add(person_2)
         session.commit()
 
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         inserted_people = session.execute(select(Person).order_by(Person.name)).scalars().all()
         assert len(inserted_people) == 2
-        assert inserted_people[0].name == person_1["name"]
-        assert inserted_people[0].age == person_1["age"]
-        assert inserted_people[1].name == person_2["name"]
-        assert inserted_people[1].age == person_2["age"]
+        assert inserted_people[0].name == person_1_data["name"]
+        assert inserted_people[0].age == person_1_data["age"]
+        assert inserted_people[1].name == person_2_data["name"]
+        assert inserted_people[1].age == person_2_data["age"]
 
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = (
@@ -296,6 +305,8 @@ def test_extra_field_is_reused_across_commits(
         assert change_logs[1].diff == expected_diffs[1]
         assert change_logs[0].extra == extra
         assert change_logs[1].extra == extra
+        assert change_logs[0].record_id == person_1.id
+        assert change_logs[1].record_id == person_2.id
 
 
 def test_extra_field_is_saved_independently_for_concurrent_sessions(
@@ -308,7 +319,7 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
     dt_after = now + dt.timedelta(seconds=1)
     extra_1 = dict(session_no=1)
     extra_2 = dict(session_no=2)
-    people = [dict(name="A", age=1), dict(name="B", age=2)]
+    people_data = [dict(name="A", age=1), dict(name="B", age=2)]
     expected_diffs = [
         dict(
             name=Diff(old=None, new="A"),
@@ -325,13 +336,15 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
         with production_mksession.begin() as session_2:  # type: ignore[no-untyped-call]
             log_changes(of=session_1, to=audit_engine, extra=copy.deepcopy(extra_1))
             log_changes(of=session_2, to=audit_engine, extra=copy.deepcopy(extra_2))
-            session_1.add(Person(**people[0]))  # type: ignore[arg-type]
-            session_2.add(Person(**people[1]))  # type: ignore[arg-type]
+            person_1 = Person(**people_data[0])  # type: ignore[arg-type]
+            session_1.add(person_1)
+            person_2 = Person(**people_data[1])  # type: ignore[arg-type]
+            session_2.add(person_2)
 
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
         inserted_people = session.execute(select(Person).order_by(Person.name)).scalars().all()
-        assert_inserted_people_data(inserted_people, people)
+        assert_inserted_people_data(inserted_people, people_data)
 
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = (
@@ -348,3 +361,5 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
         assert change_logs[1].diff == expected_diffs[1]
         assert change_logs[0].extra == extra_1
         assert change_logs[1].extra == extra_2
+        assert change_logs[0].record_id == person_1.id
+        assert change_logs[1].record_id == person_2.id

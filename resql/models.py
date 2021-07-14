@@ -13,7 +13,7 @@ class ChangeLog(AuditingBase):
     diff = Column(JSON, nullable=False)
     executed_at = Column(UtcDateTime, nullable=False, server_default=func.now())
     extra = Column(JSON, nullable=True)
-    primary_key = Column(JSON, nullable=False)
+    record_id = Column(Integer, nullable=False)
     table_name = Column(String(128), nullable=False)
     type = Column(String(32), nullable=False)
 
