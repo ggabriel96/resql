@@ -57,14 +57,14 @@ def _production_engine(env: Environment) -> Iterator[Engine]:
 
 @fixture(name="audit_mksession", scope="function")
 def _audit_mksession(audit_engine: Engine) -> sessionmaker:
-    return sessionmaker(audit_engine, future=True)
+    return sessionmaker(audit_engine, expire_on_commit=False, future=True)
 
 
 @fixture(name="recovery_mksession", scope="function")
 def _recovery_mksession(recovery_engine: Engine) -> sessionmaker:
-    return sessionmaker(recovery_engine, future=True)
+    return sessionmaker(recovery_engine, expire_on_commit=False, future=True)
 
 
 @fixture(name="production_mksession", scope="function")
 def _production_mksession(production_engine: Engine) -> sessionmaker:
-    return sessionmaker(production_engine, future=True)
+    return sessionmaker(production_engine, expire_on_commit=False, future=True)
