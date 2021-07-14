@@ -734,6 +734,17 @@ pymysql = ["pymysql (<1)", "pymysql"]
 sqlcipher = ["sqlcipher3-binary"]
 
 [[package]]
+name = "sqlalchemy-utc"
+version = "0.12.0"
+description = "SQLAlchemy type to store aware datetime values"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+SQLAlchemy = ">=0.9.0"
+
+[[package]]
 name = "sqlalchemy2-stubs"
 version = "0.0.1a4"
 description = "Typing Stubs for SQLAlchemy 1.4"
@@ -897,7 +908,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "354e303bb415584085701bf09d18d12c0c294bdf6e241f50030a765fffea24fe"
+content-hash = "a26cb6d2de9123715696ef56281cb426e11dae24e9c7394fdddb6b188ce7fd10"
 
 [metadata.files]
 aiofiles = [
@@ -1480,6 +1491,10 @@ sqlalchemy = [
     {file = "SQLAlchemy-1.4.11-cp39-cp39-win32.whl", hash = "sha256:e7d76312e904aa4ea221a92c0bc2e299ad46e4580e2d72ca1f7e6d31dce5bfab"},
     {file = "SQLAlchemy-1.4.11-cp39-cp39-win_amd64.whl", hash = "sha256:4a2e7f037d3ca818d6d0490e3323fd451545f580df30d62b698da2f247015a34"},
     {file = "SQLAlchemy-1.4.11.tar.gz", hash = "sha256:4ad4044eb86fbcbdff2106e44f479fbdac703d77860b3e19988c8a8786e73061"},
+]
+sqlalchemy-utc = [
+    {file = "SQLAlchemy-Utc-0.12.0.tar.gz", hash = "sha256:c21a7a95d02f04c04fdcdcc24a89a9ae3031737d934e558fb2efe6fe72af9666"},
+    {file = "SQLAlchemy_Utc-0.12.0-py2.py3-none-any.whl", hash = "sha256:1a30e52ee2e2e284e985bba3ecf28a998231ce754c7f97fff97a841a84bf1456"},
 ]
 sqlalchemy2-stubs = [
     {file = "sqlalchemy2-stubs-0.0.1a4.tar.gz", hash = "sha256:821d48cba522d151419e0abff63c348eb9e9312a0758171c57ca34d68f4e0280"},
