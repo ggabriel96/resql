@@ -1,56 +1,40 @@
-from dataclasses import dataclass
-from typing import Iterator, Optional
+from typing import Iterator
 
 from fastapi import Header
 from sqlalchemy import create_engine
-from sqlalchemy.future import Engine
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from examples.fastapi.database.models import Base as ProductionBase
 from examples.fastapi.settings import Environment
 from resql.auditing import log_changes, log_queries
-from resql.models import AuditingBase, RecoveryBase
+from resql import change_log, query_log
 
-
-@dataclass
-class Engines:
-    production: Optional[Engine] = None
-    audit: Optional[Engine] = None
-    recovery: Optional[Engine] = None
-
-
-engines = Engines()
-session_maker: Optional[sessionmaker] = None  # pylint: disable=invalid-name
+AUDIT_ENGINE: Engine
+PRODUCTION_ENGINE: Engine
+RECOVERY_ENGINE: Engine
+SESSION_MAKER: sessionmaker
 
 
 def init_from_env(env: Environment) -> None:
-    global engines, session_maker  # pylint: disable=global-statement, invalid-name
+    global AUDIT_ENGINE, PRODUCTION_ENGINE, RECOVERY_ENGINE, SESSION_MAKER  # pylint: disable=global-statement
 
-    engines.production = create_engine(  # type: ignore[assignment]
-        env.production_url, echo=True, future=True, logging_name="PRODUCTN"
-    )
-    ProductionBase.metadata.create_all(engines.production)
+    AUDIT_ENGINE = create_engine(env.audit_url, echo=True, future=True, logging_name="AUDITING")
+    audit_registry = change_log.map_default()
+    audit_registry.metadata.create_all(AUDIT_ENGINE)
 
-    engines.audit = create_engine(  # type: ignore[assignment]
-        env.audit_url, echo=True, future=True, logging_name="AUDITING"
-    )
-    AuditingBase.metadata.create_all(engines.audit)
+    RECOVERY_ENGINE = create_engine(env.recovery_url, echo=True, future=True, logging_name="RECOVERY")
+    recovery_registry = query_log.map_default()
+    recovery_registry.metadata.create_all(RECOVERY_ENGINE)
 
-    engines.recovery = create_engine(  # type: ignore[assignment]
-        env.recovery_url, echo=True, future=True, logging_name="RECOVERY"
-    )
-    RecoveryBase.metadata.create_all(engines.recovery)
-
-    session_maker = sessionmaker(engines.production, future=True)
-
-    assert engines.production is not None
-    assert engines.recovery is not None
-    log_queries(of=engines.production, to=engines.recovery)
+    PRODUCTION_ENGINE = create_engine(env.production_url, echo=True, future=True, logging_name="PRODUCTN")
+    ProductionBase.metadata.create_all(PRODUCTION_ENGINE)
+    SESSION_MAKER = sessionmaker(PRODUCTION_ENGINE, future=True)
+    log_queries(of=PRODUCTION_ENGINE, to=RECOVERY_ENGINE)
 
 
 def begin_session(user_agent: str = Header(...)) -> Iterator[Session]:
-    global engines, session_maker  # pylint: disable=global-statement, invalid-name
-    with session_maker.begin() as session:  # type: ignore # pylint: disable=no-member
-        assert engines.audit is not None
-        log_changes(of=session, to=engines.audit, extra=dict(user_agent=user_agent))
+    global AUDIT_ENGINE, SESSION_MAKER  # pylint: disable=global-statement
+    with SESSION_MAKER.begin() as session:  # type: ignore # pylint: disable=no-member
+        log_changes(of=session, to=AUDIT_ENGINE, extra=dict(user_agent=user_agent))
         yield session
