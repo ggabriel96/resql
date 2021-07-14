@@ -7,5 +7,5 @@ Base = declarative_base()
 class Country(Base):
     __tablename__ = "country"
 
-    name = Column(String, primary_key=True)
+    name = Column(String(64), primary_key=True)
     population = Column(Integer, nullable=True)
