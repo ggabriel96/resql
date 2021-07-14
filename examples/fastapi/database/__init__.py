@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from examples.fastapi.database.models import Base as ProductionBase
 from examples.fastapi.settings import Environment
-from resql.auditing import log_changes, log_queries
 from resql import change_log, query_log
+from resql.auditing import log_changes, log_queries
 
 AUDIT_ENGINE: Engine
 PRODUCTION_ENGINE: Engine
