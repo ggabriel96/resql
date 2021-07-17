@@ -18,11 +18,6 @@ jobs:
       contents: read
       security-events: write
 
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'python' ]
-
     steps:
       - uses: actions/checkout@v2
 
@@ -33,7 +28,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v1
         with:
-          languages: ${{ matrix.language }}
+          languages: python
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v1
