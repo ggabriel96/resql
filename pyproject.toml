@@ -51,6 +51,9 @@ extension-pkg-allow-list = ["pydantic"]
 [tool.pylint.messages-control]
 disable = ["duplicate-code", "missing-class-docstring", "missing-function-docstring", "missing-module-docstring", "too-few-public-methods"]
 
+[tool.pylint.design]
+max-attributes = 10
+
 [tool.pylint.format]
 max-line-length = 120
 good-names = ["_", "db", "ex", "id", "of", "pk", "to"]
