@@ -10,6 +10,7 @@ sqlalchemy = "^1.4.11"
 SQLAlchemy-Utc = "^0.12.0"
 
 [tool.poetry.dev-dependencies]
+PyMySQL = "^1.0.2"
 black = "^21.6b0"
 commitizen = "^2.17.9"
 fastapi = {extras = ["all"], version = "^0.63.0"}
