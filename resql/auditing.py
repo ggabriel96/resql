@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Iterator, Literal, Optional, TypedDict, Union
+from typing import Any, Iterator, Optional, TypedDict, Union
 
 from sqlalchemy import event, inspect
 from sqlalchemy.engine import Connection, CursorResult, Engine
@@ -7,7 +7,7 @@ from sqlalchemy.orm import ColumnProperty, InstanceState, Session, UOWTransactio
 from sqlalchemy.orm.exc import UnmappedColumnError
 from sqlalchemy.sql import Select
 
-from resql.change_log import ChangeLog
+from resql.change_log import ChangeLog, OpType
 from resql.query_log import QueryLog
 from tests.utils import now_in_utc
 
@@ -119,7 +119,7 @@ class ChangeLogger:
     def __del__(self) -> None:
         print("ChangeLogger.__del__")
 
-    def _new_log(self, obj: Any, log_type: Literal["delete", "insert", "update"]) -> ChangeLog:
+    def _new_log(self, obj: Any, op_type: OpType) -> ChangeLog:
         diff = get_model_diff(obj)
         return ChangeLog(
             table_name=getattr(obj, "__tablename__"),
@@ -127,7 +127,7 @@ class ChangeLogger:
             executed_at=now_in_utc(),
             extra=self.extra,
             record_id=getattr(obj, "id"),
-            type=log_type,
+            type=op_type,
         )
 
     def listen(self, session: Union[Session, sessionmaker]) -> None:
@@ -136,11 +136,11 @@ class ChangeLogger:
     def after_flush(self, session: Session, _: UOWTransaction) -> None:
         with self.session_maker.begin() as target_session:  # type: ignore[no-untyped-call] # pylint: disable=no-member
             for obj in session.deleted:
-                target_session.add(self._new_log(obj, "delete"))
+                target_session.add(self._new_log(obj, OpType.DELETE))
             for obj in session.dirty:
-                target_session.add(self._new_log(obj, "update"))
+                target_session.add(self._new_log(obj, OpType.UPDATE))
             for obj in session.new:
-                target_session.add(self._new_log(obj, "insert"))
+                target_session.add(self._new_log(obj, OpType.INSERT))
 
 
 def log_changes(

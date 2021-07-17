@@ -5,7 +5,7 @@ from sqlalchemy.future import Engine
 from sqlalchemy.orm import sessionmaker
 
 from resql.auditing import Diff, log_changes
-from resql.change_log import ChangeLog
+from resql.change_log import ChangeLog, OpType
 from tests.models import Person
 from tests.utils import now_in_utc
 
@@ -46,7 +46,7 @@ def test_orm_update_should_be_audited(
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert len(change_logs) == 1
-        assert change_logs[0].type == "update"
+        assert change_logs[0].type == OpType.UPDATE
         assert dt_before <= change_logs[0].executed_at <= dt_after
         assert change_logs[0].table_name == Person.__tablename__
         assert change_logs[0].diff == expected_diff
