@@ -3,8 +3,52 @@ name: main
 on: [push]
 
 jobs:
-  test-on-sqlite:
+  test:
+    name: Test with ${{ matrix.db.name }}
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        db:
+          - name: MySQL
+            services:
+              database:
+                image: mysql:8
+                ports: [ "3306:3306" ]
+                env:
+                  MYSQL_ROOT_PASSWORD: mysql
+            host-env:
+              AUDIT_URL: "mysql+pymysql://root:mysql@127.0.0.1/resql_audit"
+              PRODUCTION_URL: "mysql+pymysql://root:mysql@127.0.0.1/resql_prod"
+              RECOVERY_URL: "mysql+pymysql://root:mysql@127.0.0.1/resql_recover"
+            create-databases-cmd: |
+              mysql -h 127.0.0.1 -u root -pmysql -e "CREATE DATABASE resql_audit;"
+              mysql -h 127.0.0.1 -u root -pmysql -e "CREATE DATABASE resql_prod;"
+              mysql -h 127.0.0.1 -u root -pmysql -e "CREATE DATABASE resql_recover;"
+
+          - name: PostgreSQL
+            services:
+              database:
+                image: postgres:13
+                ports: [ "5432:5432" ]
+                env:
+                  POSTGRES_PASSWORD: pgsql
+            host-env:
+              AUDIT_URL: "postgresql+psycopg2://postgres:pgsql@127.0.0.1/resql_audit"
+              PRODUCTION_URL: "postgresql+psycopg2://postgres:pgsql@127.0.0.1/resql_prod"
+              RECOVERY_URL: "postgresql+psycopg2://postgres:pgsql@127.0.0.1/resql_recover"
+            create-databases-cmd: |
+              psql postgresql://postgres:pgsql@127.0.0.1 -c "CREATE DATABASE resql_audit;"
+              psql postgresql://postgres:pgsql@127.0.0.1 -c "CREATE DATABASE resql_prod;"
+              psql postgresql://postgres:pgsql@127.0.0.1 -c "CREATE DATABASE resql_recover;"
+
+          - name: SQLite
+            services: {}
+            host-env: {} # will use the default in `tests/settings.py`
+            create-databases-cmd: echo "Database creation not needed for SQLite"
+    env:
+      ${{ matrix.db.host-env }}
+    services:
+      ${{ matrix.db.services }}
     steps:
       - uses: actions/checkout@v2
 
@@ -27,6 +71,9 @@ jobs:
 
       - name: Install dependencies
         run: poetry install --no-interaction
+
+      - name: Create needed databases
+        run: ${{ matrix.db.create-databases-cmd }}
 
       - name: Run tests
         run: poetry run pytest --cov=resql/ --cov-report=xml --verbose tests/
