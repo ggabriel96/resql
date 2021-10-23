@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 
 from resql.auditing import Diff, log_changes
 from resql.change_log import ChangeLog, OpType
-from tests.models import Person
+from tests.models import Number, Person
 from tests.utils import now_in_utc
 
 
@@ -159,6 +159,42 @@ def test_orm_insert_rolled_back_by_exception_should_not_be_audited(
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert change_logs == []
+
+
+def test_computed_columns_are_not_audited(
+    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+) -> None:
+    # Arrange
+    number_value = 3
+    now = now_in_utc()
+    expected_diff = dict(value=Diff(old=None, new=number_value))
+
+    # Act
+    log_changes(of=production_mksession, to=audit_engine)
+    with freeze_time(now):
+        with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+            number = Number(value=number_value)
+            session.add(number)
+
+    # Assert we didn't change the inserted object
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        numbers_db = session.execute(select(Number)).scalars().all()
+        assert len(numbers_db) == 1
+        assert numbers_db[0].id == number.id
+        assert numbers_db[0].value == number_value
+        assert numbers_db[0].doubled == number_value * 2
+        assert numbers_db[0].squared == number_value ** 2
+
+    # Assert we audited the insert
+    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+        change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+        assert len(change_logs) == 1
+        assert change_logs[0].type == OpType.INSERT
+        assert change_logs[0].executed_at == now
+        assert change_logs[0].table_name == Number.__tablename__
+        assert change_logs[0].diff == expected_diff
+        assert change_logs[0].extra is None
+        assert change_logs[0].record_id == number.id
 
 
 def test_core_insert_is_not_audited(
