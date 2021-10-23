@@ -25,6 +25,7 @@ pytest = "^6.2.3"
 pytest-cov = "^2.11.1"
 python-rapidjson = "^1.5"
 sqlalchemy2-stubs = "^0.0.1-alpha.4"
+types-freezegun = "^1.1.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
