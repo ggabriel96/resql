@@ -1,8 +1,8 @@
 import copy
-import datetime as dt
 from typing import Any
 
 import pytest
+from freezegun import freeze_time
 from sqlalchemy import insert, select, text
 from sqlalchemy.future import Engine
 from sqlalchemy.orm import sessionmaker
@@ -25,8 +25,6 @@ def test_orm_insert_should_be_audited(
 ) -> None:
     # Arrange
     now = now_in_utc()
-    dt_before = now - dt.timedelta(seconds=1)
-    dt_after = now + dt.timedelta(seconds=1)
     person_data = dict(name="Someone", age=25)
     expected_diff = dict(
         name=Diff(old=None, new="Someone"),
@@ -35,9 +33,10 @@ def test_orm_insert_should_be_audited(
 
     # Act
     log_changes(of=production_mksession, to=audit_engine)
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
-        person = Person(**person_data)  # type: ignore[arg-type]
-        session.add(person)
+    with freeze_time(now):
+        with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+            person = Person(**person_data)  # type: ignore[arg-type]
+            session.add(person)
 
     # Assert we didn't change the inserted object
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
@@ -51,7 +50,7 @@ def test_orm_insert_should_be_audited(
         )
         assert len(change_logs) == 1
         assert change_logs[0].type == OpType.INSERT
-        assert dt_before <= change_logs[0].executed_at <= dt_after
+        assert change_logs[0].executed_at == now
         assert change_logs[0].table_name == Person.__tablename__
         assert change_logs[0].diff == expected_diff
         assert change_logs[0].extra is None
@@ -63,8 +62,6 @@ def test_many_orm_inserts_should_be_audited(
 ) -> None:
     # Arrange
     now = now_in_utc()
-    dt_before = now - dt.timedelta(seconds=1)
-    dt_after = now + dt.timedelta(seconds=1)
     people_data = [dict(name="A", age=1), dict(name="B", age=2), dict(name="C", age=3)]
     expected_diffs = [
         dict(
@@ -83,9 +80,10 @@ def test_many_orm_inserts_should_be_audited(
 
     # Act
     log_changes(of=production_mksession, to=audit_engine)
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
-        people = [Person(**data) for data in people_data]  # type: ignore[arg-type]
-        session.add_all(people)
+    with freeze_time(now):
+        with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+            people = [Person(**data) for data in people_data]  # type: ignore[arg-type]
+            session.add_all(people)
 
     # Assert we didn't change the inserted objects
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
@@ -101,9 +99,9 @@ def test_many_orm_inserts_should_be_audited(
         assert change_logs[0].type == OpType.INSERT
         assert change_logs[1].type == OpType.INSERT
         assert change_logs[2].type == OpType.INSERT
-        assert dt_before <= change_logs[0].executed_at <= dt_after
-        assert dt_before <= change_logs[1].executed_at <= dt_after
-        assert dt_before <= change_logs[2].executed_at <= dt_after
+        assert change_logs[0].executed_at == now
+        assert change_logs[1].executed_at == now
+        assert change_logs[2].executed_at == now
         assert change_logs[0].table_name == Person.__tablename__
         assert change_logs[1].table_name == Person.__tablename__
         assert change_logs[2].table_name == Person.__tablename__
@@ -254,8 +252,6 @@ def test_extra_field_is_reused_across_commits(
     # Arrange
     # pylint: disable=too-many-locals
     now = now_in_utc()
-    dt_before = now - dt.timedelta(seconds=1)
-    dt_after = now + dt.timedelta(seconds=1)
     extra = dict(user_agent="testing")
     person_1_data = dict(name="A", age=1)
     person_2_data = dict(name="B", age=2)
@@ -273,13 +269,14 @@ def test_extra_field_is_reused_across_commits(
     # Act
     with production_mksession() as session:
         log_changes(of=session, to=audit_engine, extra=copy.deepcopy(extra))
-        person_1 = Person(**person_1_data)  # type: ignore[arg-type]
-        session.add(person_1)
-        session.commit()
+        with freeze_time(now):
+            person_1 = Person(**person_1_data)  # type: ignore[arg-type]
+            session.add(person_1)
+            session.commit()
 
-        person_2 = Person(**person_2_data)  # type: ignore[arg-type]
-        session.add(person_2)
-        session.commit()
+            person_2 = Person(**person_2_data)  # type: ignore[arg-type]
+            session.add(person_2)
+            session.commit()
 
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
@@ -297,8 +294,8 @@ def test_extra_field_is_reused_across_commits(
         assert len(change_logs) == 2
         assert change_logs[0].type == OpType.INSERT
         assert change_logs[1].type == OpType.INSERT
-        assert dt_before <= change_logs[0].executed_at <= dt_after
-        assert dt_before <= change_logs[1].executed_at <= dt_after
+        assert change_logs[0].executed_at == now
+        assert change_logs[1].executed_at == now
         assert change_logs[0].table_name == Person.__tablename__
         assert change_logs[1].table_name == Person.__tablename__
         assert change_logs[0].diff == expected_diffs[0]
@@ -315,8 +312,6 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
     # pylint: disable=too-many-locals
     # Arrange
     now = now_in_utc()
-    dt_before = now - dt.timedelta(seconds=1)
-    dt_after = now + dt.timedelta(seconds=1)
     extra_1 = dict(session_no=1)
     extra_2 = dict(session_no=2)
     people_data = [dict(name="A", age=1), dict(name="B", age=2)]
@@ -332,14 +327,15 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
     ]
 
     # Act
-    with production_mksession.begin() as session_1:  # type: ignore[no-untyped-call]
-        with production_mksession.begin() as session_2:  # type: ignore[no-untyped-call]
-            log_changes(of=session_1, to=audit_engine, extra=copy.deepcopy(extra_1))
-            log_changes(of=session_2, to=audit_engine, extra=copy.deepcopy(extra_2))
-            person_1 = Person(**people_data[0])  # type: ignore[arg-type]
-            session_1.add(person_1)
-            person_2 = Person(**people_data[1])  # type: ignore[arg-type]
-            session_2.add(person_2)
+    with freeze_time(now):  # not sure why this had to be the outermost context manager to work
+        with production_mksession.begin() as session_1:  # type: ignore[no-untyped-call]
+            with production_mksession.begin() as session_2:  # type: ignore[no-untyped-call]
+                log_changes(of=session_1, to=audit_engine, extra=copy.deepcopy(extra_1))
+                log_changes(of=session_2, to=audit_engine, extra=copy.deepcopy(extra_2))
+                person_1 = Person(**people_data[0])  # type: ignore[arg-type]
+                session_1.add(person_1)
+                person_2 = Person(**people_data[1])  # type: ignore[arg-type]
+                session_2.add(person_2)
 
     # Assert
     with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
@@ -353,8 +349,8 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
         assert len(change_logs) == 2
         assert change_logs[0].type == OpType.INSERT
         assert change_logs[1].type == OpType.INSERT
-        assert dt_before <= change_logs[0].executed_at <= dt_after
-        assert dt_before <= change_logs[1].executed_at <= dt_after
+        assert change_logs[0].executed_at == now
+        assert change_logs[1].executed_at == now
         assert change_logs[0].table_name == Person.__tablename__
         assert change_logs[1].table_name == Person.__tablename__
         assert change_logs[0].diff == expected_diffs[0]
