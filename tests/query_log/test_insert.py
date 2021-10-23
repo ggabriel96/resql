@@ -6,6 +6,7 @@ from sqlalchemy.future import Engine
 from sqlalchemy.orm import sessionmaker
 
 from resql.auditing import log_queries
+from resql.change_log import OpType
 from resql.query_log import QueryLog
 from tests.models import Person
 from tests.utils import now_in_utc
@@ -44,8 +45,8 @@ def test_extra_field_is_reused_across_commits_on_same_engine(
         assert dt_before <= query_logs[1].executed_at <= dt_after
         assert query_logs[0].extra == extra
         assert query_logs[1].extra == extra
-        assert query_logs[0].type == "Insert"
-        assert query_logs[1].type == "Insert"
+        assert query_logs[0].type == OpType.INSERT
+        assert query_logs[1].type == OpType.INSERT
 
 
 def test_extra_field_is_saved_independently_for_concurrent_connections(
@@ -84,5 +85,5 @@ def test_extra_field_is_saved_independently_for_concurrent_connections(
         assert dt_before <= query_logs[1].executed_at <= dt_after
         assert query_logs[0].extra == extra_1
         assert query_logs[1].extra == extra_2
-        assert query_logs[0].type == "Insert"
-        assert query_logs[1].type == "Insert"
+        assert query_logs[0].type == OpType.INSERT
+        assert query_logs[1].type == OpType.INSERT
