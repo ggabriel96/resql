@@ -124,7 +124,6 @@ def test_computed_columns_are_not_audited(
         assert numbers_db[0].id == number.id
         assert numbers_db[0].value == number_value_new
         assert numbers_db[0].doubled == number_value_new * 2
-        assert numbers_db[0].squared == number_value_new ** 2
 
     # Assert we audited the insert
     with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]

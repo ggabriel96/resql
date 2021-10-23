@@ -10,7 +10,8 @@ class Number(Base):
     id = Column(Integer, primary_key=True)
     value = Column(Integer, nullable=False)
     doubled = Column(Integer, Computed("value + value", persisted=True))
-    squared = Column(Integer, Computed("value * value", persisted=False))
+    # there was a `persisted=False` column here, but PostgreSQL doesn't support it,
+    # so we gotta find a way to eventually test that too.
 
 
 class Person(Base):
