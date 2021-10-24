@@ -122,7 +122,7 @@ class ChangeLogger:
     def _new_log(self, obj: Any, op_type: OpType) -> ChangeLog:
         diff = get_model_diff(obj)
         return ChangeLog(
-            table_name=getattr(obj, "__tablename__"),
+            table_name=getattr(obj, "__table__").name,
             diff=diff.values,
             executed_at=now_in_utc(),
             extra=self.extra,
