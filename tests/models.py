@@ -1,7 +1,20 @@
-from sqlalchemy import Column, Computed, Integer, String
+from sqlalchemy import Column, Computed, Integer, String, Table
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
+
+
+class ImperativeModel:
+    id: int
+    value: str
+
+
+ImperativeTable = Table(
+    "imperative_table",
+    Base.metadata,
+    Column("id", Integer, primary_key=True),
+    Column("value", String(64), nullable=True),
+)
 
 
 class Number(Base):
@@ -20,3 +33,6 @@ class Person(Base):
     id = Column(Integer, primary_key=True)
     age = Column(Integer)
     name = Column(String(64), nullable=False)
+
+
+Base.registry.map_imperatively(ImperativeModel, ImperativeTable)

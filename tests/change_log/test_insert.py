@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 
 from resql.auditing import Diff, log_changes
 from resql.change_log import ChangeLog, OpType
-from tests.models import Number, Person
+from tests.models import ImperativeModel, ImperativeTable, Number, Person
 from tests.utils import now_in_utc
 
 
@@ -394,3 +394,38 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
         assert change_logs[1].extra == extra_2
         assert change_logs[0].record_id == person_1.id
         assert change_logs[1].record_id == person_2.id
+
+
+def test_table_mapped_imperatively_should_be_audited(
+    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+) -> None:
+    # Arrange
+    now = now_in_utc()
+    imperative_data = dict(value="imperative")
+    expected_diff = dict(
+        value=Diff(old=None, new="imperative"),
+    )
+
+    # Act
+    log_changes(of=production_mksession, to=audit_engine)
+    with freeze_time(now):
+        with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+            imperative = ImperativeModel(**imperative_data)  # type: ignore[call-arg]
+            session.add(imperative)
+
+    # Assert we didn't change the inserted object
+    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        inserted_imperatives = session.execute(select(ImperativeModel)).scalars().all()
+        assert len(inserted_imperatives) == 1
+        assert inserted_imperatives[0].value == imperative_data["value"]
+
+    # Assert we audited the insert
+    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+        change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
+        assert len(change_logs) == 1
+        assert change_logs[0].type == OpType.INSERT
+        assert change_logs[0].executed_at == now
+        assert change_logs[0].table_name == ImperativeTable.name
+        assert change_logs[0].diff == expected_diff
+        assert change_logs[0].extra is None
+        assert change_logs[0].record_id == imperative.id
