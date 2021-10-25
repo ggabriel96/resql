@@ -117,7 +117,7 @@ def test_extra_field_is_reused_across_commits_on_same_engine(
         assert len(inserted_people) == 2
 
     with recovery_mksession.begin() as recovery_session:
-        query_logs = recovery_session.execute(select(QueryLog).order_by(QueryLog.id)).scalars().all()
+        query_logs: list[QueryLog] = recovery_session.execute(select(QueryLog).order_by(QueryLog.id)).scalars().all()
         assert len(query_logs) == 2
         assert query_logs[0].dialect_description == getattr(production_engine.dialect, "dialect_description", ...)
         assert query_logs[1].dialect_description == getattr(production_engine.dialect, "dialect_description", ...)
@@ -125,6 +125,10 @@ def test_extra_field_is_reused_across_commits_on_same_engine(
         assert query_logs[1].executed_at == now
         assert query_logs[0].extra == extra
         assert query_logs[1].extra == extra
+        assert query_logs[0].parameters == [person_1]
+        assert query_logs[1].parameters == [person_2]
+        assert Person.__tablename__ in query_logs[0].statement
+        assert Person.__tablename__ in query_logs[1].statement
         assert query_logs[0].type == OpType.INSERT
         assert query_logs[1].type == OpType.INSERT
 
@@ -138,7 +142,8 @@ def test_extra_field_is_saved_independently_for_concurrent_connections(
     now = now_in_utc()
     extra_1 = dict(session_no=1)
     extra_2 = dict(session_no=2)
-    people = [dict(name="A", age=1), dict(name="B", age=2)]
+    person_1 = dict(name="A", age=1)
+    person_2 = dict(name="B", age=2)
 
     # Act
     with freeze_time(now):
@@ -147,9 +152,9 @@ def test_extra_field_is_saved_independently_for_concurrent_connections(
             with production_engine.connect() as conn_2:
                 log_queries(of=conn_2, to=recovery_engine, extra=copy.deepcopy(extra_2))
 
-                conn_1.execute(insert(Person).values(**people[0]))
+                conn_1.execute(insert(Person).values(**person_1))
                 conn_1.commit()
-                conn_2.execute(insert(Person).values(**people[1]))
+                conn_2.execute(insert(Person).values(**person_2))
                 conn_2.commit()
 
     # Assert
@@ -158,7 +163,7 @@ def test_extra_field_is_saved_independently_for_concurrent_connections(
         assert len(inserted_people) == 2
 
     with recovery_mksession.begin() as recovery_session:
-        query_logs = recovery_session.execute(select(QueryLog).order_by(QueryLog.id)).scalars().all()
+        query_logs: list[QueryLog] = recovery_session.execute(select(QueryLog).order_by(QueryLog.id)).scalars().all()
         assert len(query_logs) == 2
         assert query_logs[0].dialect_description == getattr(production_engine.dialect, "dialect_description", ...)
         assert query_logs[1].dialect_description == getattr(production_engine.dialect, "dialect_description", ...)
@@ -166,5 +171,9 @@ def test_extra_field_is_saved_independently_for_concurrent_connections(
         assert query_logs[1].executed_at == now
         assert query_logs[0].extra == extra_1
         assert query_logs[1].extra == extra_2
+        assert query_logs[0].parameters == [person_1]
+        assert query_logs[1].parameters == [person_2]
+        assert Person.__tablename__ in query_logs[0].statement
+        assert Person.__tablename__ in query_logs[1].statement
         assert query_logs[0].type == OpType.INSERT
         assert query_logs[1].type == OpType.INSERT
