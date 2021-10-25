@@ -24,7 +24,7 @@ pylint = "^2.11.1"
 pytest = "^6.2.5"
 pytest-cov = "^3.0.0"
 python-rapidjson = "^1.5"
-sqlalchemy2-stubs = "^0.0.1-alpha.4"
+sqlalchemy2-stubs = "^0.0.2-alpha.18"
 types-freezegun = "^1.1.2"
 
 [build-system]
