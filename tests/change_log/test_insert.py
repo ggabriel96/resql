@@ -5,7 +5,7 @@ import pytest
 from freezegun import freeze_time
 from sqlalchemy import insert, select, text
 from sqlalchemy.future import Engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from resql.auditing import Diff, log_changes
 from resql.change_log import ChangeLog, OpType
@@ -22,8 +22,8 @@ def assert_inserted_people_data(inserted_people: list[Person], expected_people: 
 
 def test_orm_insert_should_be_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     now = now_in_utc()
@@ -61,8 +61,8 @@ def test_orm_insert_should_be_audited(
 
 def test_many_orm_inserts_should_be_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     now = now_in_utc()
@@ -122,8 +122,8 @@ def test_many_orm_inserts_should_be_audited(
 
 def test_rolled_back_orm_insert_should_not_be_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     person = Person(name="Someone", age=25)
@@ -146,8 +146,8 @@ def test_rolled_back_orm_insert_should_not_be_audited(
 
 def test_orm_insert_rolled_back_by_exception_should_not_be_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     person = Person(name="Someone", age=25)
@@ -171,8 +171,8 @@ def test_orm_insert_rolled_back_by_exception_should_not_be_audited(
 
 def test_computed_columns_are_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     number_value = 3
@@ -208,8 +208,8 @@ def test_computed_columns_are_not_audited(
 
 def test_core_insert_is_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     person = dict(name="Someone", age=25)
@@ -231,8 +231,8 @@ def test_core_insert_is_not_audited(
 
 def test_many_core_inserts_is_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     people = [dict(name="A", age=1), dict(name="B", age=2), dict(name="C", age=3)]
@@ -255,8 +255,8 @@ def test_many_core_inserts_is_not_audited(
 
 def test_text_insert_is_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     person = dict(name="Someone", age=25)
@@ -278,8 +278,8 @@ def test_text_insert_is_not_audited(
 
 def test_many_text_inserts_is_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     people = [dict(name="A", age=1), dict(name="B", age=2), dict(name="C", age=3)]
@@ -301,8 +301,8 @@ def test_many_text_inserts_is_not_audited(
 
 def test_extra_field_is_reused_across_commits(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     # pylint: disable=too-many-locals
@@ -363,8 +363,8 @@ def test_extra_field_is_reused_across_commits(
 
 def test_extra_field_is_saved_independently_for_concurrent_sessions(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # pylint: disable=too-many-locals
     # Arrange
@@ -420,8 +420,8 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
 
 def test_table_mapped_imperatively_should_be_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     now = now_in_utc()

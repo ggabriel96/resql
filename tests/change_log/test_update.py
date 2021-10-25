@@ -1,7 +1,7 @@
 from freezegun import freeze_time
 from sqlalchemy import select, update
 from sqlalchemy.future import Engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from resql.auditing import Diff, log_changes
 from resql.change_log import ChangeLog, OpType
@@ -11,8 +11,8 @@ from tests.utils import now_in_utc
 
 def test_orm_update_should_be_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     now = now_in_utc()
@@ -30,8 +30,8 @@ def test_orm_update_should_be_audited(
         with production_mksession.begin() as session:
             inserted_people = session.execute(select(Person).where(Person.name == "Someone")).scalars().all()
             assert len(inserted_people) == 1
-            assert inserted_people[0].name == expected_diff["name"]["old"]  # pylint: disable=unsubscriptable-object
-            assert inserted_people[0].age == expected_diff["age"]["old"]  # pylint: disable=unsubscriptable-object
+            assert inserted_people[0].name == expected_diff["name"]["old"]
+            assert inserted_people[0].age == expected_diff["age"]["old"]
             inserted_people[0].name = "Someone Else"
             inserted_people[0].age = 50
 
@@ -39,8 +39,8 @@ def test_orm_update_should_be_audited(
     with production_mksession.begin() as session:
         inserted_people = session.execute(select(Person)).scalars().all()
         assert len(inserted_people) == 1
-        assert inserted_people[0].name == expected_diff["name"]["new"]  # pylint: disable=unsubscriptable-object
-        assert inserted_people[0].age == expected_diff["age"]["new"]  # pylint: disable=unsubscriptable-object
+        assert inserted_people[0].name == expected_diff["name"]["new"]
+        assert inserted_people[0].age == expected_diff["age"]["new"]
 
     # Assert we audited the update
     with audit_mksession.begin() as audit_session:
@@ -56,8 +56,8 @@ def test_orm_update_should_be_audited(
 
 def test_orm_enabled_update_statement_is_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     """
     See the warning in https://docs.sqlalchemy.org/en/14/orm/session_basics.html#selecting-a-synchronization-strategy:
@@ -103,8 +103,8 @@ def test_orm_enabled_update_statement_is_not_audited(
 
 def test_computed_columns_are_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     number_value_old = 3

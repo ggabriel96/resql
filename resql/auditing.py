@@ -14,7 +14,7 @@ from tests.utils import now_in_utc
 
 @dataclass
 class QueryLogger:
-    session_maker: sessionmaker[Session]  # pylint: disable=unsubscriptable-object
+    session_maker: sessionmaker  # type: ignore[type-arg]
     extra: Optional[dict[str, Any]] = None
 
     def __init__(self, target_engine: Engine, extra: Optional[dict[str, Any]] = None) -> None:
@@ -38,7 +38,7 @@ class QueryLogger:
     ) -> None:
         if isinstance(clauseelement, Select):
             return
-        with self.session_maker.begin() as session:
+        with self.session_maker.begin() as session:  # pylint: disable=no-member
             log = QueryLog(
                 dialect_description=getattr(conn.dialect, "dialect_description"),
                 executed_at=now_in_utc(),
@@ -109,7 +109,7 @@ def get_model_diff(obj: Any) -> ModelDiff:
 
 @dataclass
 class ChangeLogger:
-    session_maker: sessionmaker[Session]  # pylint: disable=unsubscriptable-object
+    session_maker: sessionmaker  # type: ignore[type-arg]
     extra: Optional[dict[str, Any]] = None
 
     def __init__(self, target_engine: Engine, extra: Optional[dict[str, Any]] = None) -> None:
@@ -130,11 +130,11 @@ class ChangeLogger:
             type=op_type,
         )
 
-    def listen(self, session: Union[Session, sessionmaker[Session]]) -> None:  # pylint: disable=unsubscriptable-object
+    def listen(self, session: Union[Session, sessionmaker]) -> None:  # type: ignore[type-arg]
         event.listen(session, "after_flush", self.after_flush)
 
     def after_flush(self, session: Session, _: UOWTransaction) -> None:
-        with self.session_maker.begin() as target_session:
+        with self.session_maker.begin() as target_session:  # pylint: disable=no-member
             for obj in session.deleted:
                 target_session.add(self._new_log(obj, OpType.DELETE))
             for obj in session.dirty:
@@ -145,7 +145,7 @@ class ChangeLogger:
 
 def log_changes(
     *,
-    of: Union[Session, sessionmaker[Session]],  # pylint: disable=unsubscriptable-object
+    of: Union[Session, sessionmaker],  # type: ignore[type-arg]
     to: Engine,
     extra: Optional[dict[str, Any]] = None,
 ) -> ChangeLogger:

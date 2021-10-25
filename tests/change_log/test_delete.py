@@ -1,7 +1,7 @@
 from freezegun import freeze_time
 from sqlalchemy import delete, select
 from sqlalchemy.future import Engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from resql.auditing import log_changes
 from resql.change_log import ChangeLog, OpType
@@ -11,8 +11,8 @@ from tests.utils import now_in_utc
 
 def test_orm_delete_should_be_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     now = now_in_utc()
@@ -47,8 +47,8 @@ def test_orm_delete_should_be_audited(
 
 def test_orm_enabled_delete_statement_is_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
-    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    audit_mksession: sessionmaker,  # type: ignore[type-arg]
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     """
     See the warning in https://docs.sqlalchemy.org/en/14/orm/session_basics.html#selecting-a-synchronization-strategy:

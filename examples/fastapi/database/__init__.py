@@ -13,7 +13,7 @@ from resql.auditing import log_changes, log_queries
 AUDIT_ENGINE: Engine
 PRODUCTION_ENGINE: Engine
 RECOVERY_ENGINE: Engine
-SESSION_MAKER: sessionmaker[Session]  # pylint: disable=unsubscriptable-object
+SESSION_MAKER: sessionmaker  # type: ignore[type-arg]
 
 
 def init_from_env(env: Environment) -> None:

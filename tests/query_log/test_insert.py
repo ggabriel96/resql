@@ -3,7 +3,7 @@ import datetime as dt
 
 from sqlalchemy import insert, select
 from sqlalchemy.future import Engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from resql.auditing import log_queries
 from resql.change_log import OpType
@@ -15,7 +15,7 @@ from tests.utils import now_in_utc
 def test_extra_field_is_reused_across_commits_on_same_engine(
     recovery_engine: Engine,
     production_engine: Engine,
-    recovery_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    recovery_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     #
     now = now_in_utc()
@@ -54,7 +54,7 @@ def test_extra_field_is_reused_across_commits_on_same_engine(
 def test_extra_field_is_saved_independently_for_concurrent_connections(
     recovery_engine: Engine,
     production_engine: Engine,
-    recovery_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
+    recovery_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
     # Arrange
     now = now_in_utc()
