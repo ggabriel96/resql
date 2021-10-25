@@ -15,7 +15,7 @@ black = "^21.9b0"
 commitizen = "^2.17.9"
 fastapi = {extras = ["all"], version = "^0.70.0"}
 freezegun = "^1.1.0"
-isort = "^5.9.2"
+isort = "^5.9.3"
 mypy = "^0.902"
 pre-commit = "^2.12.1"
 psycopg2-binary = "^2.9.1"
