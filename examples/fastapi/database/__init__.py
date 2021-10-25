@@ -34,7 +34,6 @@ def init_from_env(env: Environment) -> None:
 
 
 def begin_session(user_agent: str = Header(...)) -> Iterator[Session]:
-    global AUDIT_ENGINE, SESSION_MAKER  # pylint: disable=global-statement
-    with SESSION_MAKER.begin() as session:  # type: ignore # pylint: disable=no-member
+    with SESSION_MAKER.begin() as session:  # type: ignore[no-untyped-call]
         log_changes(of=session, to=AUDIT_ENGINE, extra=dict(user_agent=user_agent))
         yield session
