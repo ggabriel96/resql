@@ -11,7 +11,7 @@ SQLAlchemy-Utc = "^0.12.0"
 
 [tool.poetry.dev-dependencies]
 PyMySQL = "^1.0.2"
-black = "^21.6b0"
+black = "^21.9b0"
 commitizen = "^2.17.9"
 fastapi = {extras = ["all"], version = "^0.70.0"}
 freezegun = "^1.1.0"
