@@ -116,8 +116,8 @@ def test_extra_field_is_reused_across_commits_on_same_engine(
         inserted_people = conn.execute(select(Person).order_by(Person.name)).all()
         assert len(inserted_people) == 2
 
-    with recovery_mksession.begin() as audit_session:
-        query_logs = audit_session.execute(select(QueryLog).order_by(QueryLog.id)).scalars().all()
+    with recovery_mksession.begin() as recovery_session:
+        query_logs = recovery_session.execute(select(QueryLog).order_by(QueryLog.id)).scalars().all()
         assert len(query_logs) == 2
         assert query_logs[0].dialect_description == getattr(production_engine.dialect, "dialect_description", ...)
         assert query_logs[1].dialect_description == getattr(production_engine.dialect, "dialect_description", ...)
@@ -157,8 +157,8 @@ def test_extra_field_is_saved_independently_for_concurrent_connections(
         inserted_people = conn.execute(select(Person).order_by(Person.name)).all()
         assert len(inserted_people) == 2
 
-    with recovery_mksession.begin() as audit_session:
-        query_logs = audit_session.execute(select(QueryLog).order_by(QueryLog.id)).scalars().all()
+    with recovery_mksession.begin() as recovery_session:
+        query_logs = recovery_session.execute(select(QueryLog).order_by(QueryLog.id)).scalars().all()
         assert len(query_logs) == 2
         assert query_logs[0].dialect_description == getattr(production_engine.dialect, "dialect_description", ...)
         assert query_logs[1].dialect_description == getattr(production_engine.dialect, "dialect_description", ...)
