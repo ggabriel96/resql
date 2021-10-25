@@ -14,7 +14,7 @@ from tests.utils import now_in_utc
 
 @dataclass
 class QueryLogger:
-    session_maker: sessionmaker
+    session_maker: sessionmaker[Session]  # pylint: disable=unsubscriptable-object
     extra: Optional[dict[str, Any]] = None
 
     def __init__(self, target_engine: Engine, extra: Optional[dict[str, Any]] = None) -> None:
@@ -38,13 +38,13 @@ class QueryLogger:
     ) -> None:
         if isinstance(clauseelement, Select):
             return
-        with self.session_maker.begin() as session:  # type: ignore[no-untyped-call] # pylint: disable=no-member
+        with self.session_maker.begin() as session:
             log = QueryLog(
-                dialect_description=conn.dialect.dialect_description,
+                dialect_description=getattr(conn.dialect, "dialect_description"),
                 executed_at=now_in_utc(),
                 extra=self.extra,
                 statement=str(result.context.compiled),
-                parameters=result.context.compiled_parameters,
+                parameters=getattr(result.context, "compiled_parameters"),
                 type=type(clauseelement).__name__,
             )
             session.add(log)
@@ -73,12 +73,12 @@ class ModelDiff:
 
 
 def get_properties(state: InstanceState) -> Iterator[ColumnProperty]:
-    for obj_col in state.mapper.local_table.c:  # type: ignore[attr-defined]
+    for obj_col in state.mapper.local_table.c:
         # get the value of the attribute based on the MapperProperty related
         # to the mapped column.  this will allow usage of MapperProperties
         # that have a different keyname than that of the mapped column.
         try:
-            yield state.mapper.get_property_by_column(obj_col)  # type: ignore[attr-defined]
+            yield state.mapper.get_property_by_column(obj_col)
         except UnmappedColumnError:
             # in the case of single table inheritance, there may be
             # columns on the mapped table intended for the subclass only.
@@ -109,7 +109,7 @@ def get_model_diff(obj: Any) -> ModelDiff:
 
 @dataclass
 class ChangeLogger:
-    session_maker: sessionmaker
+    session_maker: sessionmaker[Session]  # pylint: disable=unsubscriptable-object
     extra: Optional[dict[str, Any]] = None
 
     def __init__(self, target_engine: Engine, extra: Optional[dict[str, Any]] = None) -> None:
@@ -130,11 +130,11 @@ class ChangeLogger:
             type=op_type,
         )
 
-    def listen(self, session: Union[Session, sessionmaker]) -> None:
+    def listen(self, session: Union[Session, sessionmaker[Session]]) -> None:  # pylint: disable=unsubscriptable-object
         event.listen(session, "after_flush", self.after_flush)
 
     def after_flush(self, session: Session, _: UOWTransaction) -> None:
-        with self.session_maker.begin() as target_session:  # type: ignore[no-untyped-call] # pylint: disable=no-member
+        with self.session_maker.begin() as target_session:
             for obj in session.deleted:
                 target_session.add(self._new_log(obj, OpType.DELETE))
             for obj in session.dirty:
@@ -145,7 +145,7 @@ class ChangeLogger:
 
 def log_changes(
     *,
-    of: Union[Session, sessionmaker],
+    of: Union[Session, sessionmaker[Session]],  # pylint: disable=unsubscriptable-object
     to: Engine,
     extra: Optional[dict[str, Any]] = None,
 ) -> ChangeLogger:

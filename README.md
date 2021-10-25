@@ -39,7 +39,7 @@ The function signature is as follows:
 ```python
 def log_changes(
     *,
-    of: Union[Session, sessionmaker],
+    of: Union[Session, sessionmaker[Session]],
     to: Engine,
     extra: Optional[dict[str, Any]] = None,
 ) -> ChangeLogger

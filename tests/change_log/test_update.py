@@ -1,7 +1,7 @@
 from freezegun import freeze_time
 from sqlalchemy import select, update
 from sqlalchemy.future import Engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from resql.auditing import Diff, log_changes
 from resql.change_log import ChangeLog, OpType
@@ -10,7 +10,9 @@ from tests.utils import now_in_utc
 
 
 def test_orm_update_should_be_audited(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
     now = now_in_utc()
@@ -19,13 +21,13 @@ def test_orm_update_should_be_audited(
         name=Diff(old="Someone", new="Someone Else"),
         age=Diff(old=25, new=50),
     )
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         session.add(person)
 
     # Act
     log_changes(of=production_mksession, to=audit_engine)
     with freeze_time(now):
-        with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        with production_mksession.begin() as session:
             inserted_people = session.execute(select(Person).where(Person.name == "Someone")).scalars().all()
             assert len(inserted_people) == 1
             assert inserted_people[0].name == expected_diff["name"]["old"]  # pylint: disable=unsubscriptable-object
@@ -34,14 +36,14 @@ def test_orm_update_should_be_audited(
             inserted_people[0].age = 50
 
     # Assert we didn't change the updated object
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         inserted_people = session.execute(select(Person)).scalars().all()
         assert len(inserted_people) == 1
         assert inserted_people[0].name == expected_diff["name"]["new"]  # pylint: disable=unsubscriptable-object
         assert inserted_people[0].age == expected_diff["age"]["new"]  # pylint: disable=unsubscriptable-object
 
     # Assert we audited the update
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert len(change_logs) == 1
         assert change_logs[0].type == OpType.UPDATE
@@ -53,7 +55,9 @@ def test_orm_update_should_be_audited(
 
 
 def test_orm_enabled_update_statement_is_not_audited(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     """
     See the warning in https://docs.sqlalchemy.org/en/14/orm/session_basics.html#selecting-a-synchronization-strategy:
@@ -67,22 +71,22 @@ def test_orm_enabled_update_statement_is_not_audited(
         Person(name="This Is Correct", age=2),
         Person(name="Update This 2", age=3),
     ]
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         session.add_all(people)
 
     # Act
     log_changes(of=production_mksession, to=audit_engine)
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         update_result = session.execute(
             update(Person)
             .where(Person.name.contains("Update This"))
             .values(name="This Is Correct")
             .execution_options(synchronize_session="fetch")
         )
-        assert update_result.rowcount == 2
+        assert getattr(update_result, "rowcount") == 2
 
     # Assert
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         inserted_people = session.execute(select(Person).order_by(Person.age)).scalars().all()
         assert len(inserted_people) == 3
         assert inserted_people[0].name == "This Is Correct"
@@ -92,33 +96,35 @@ def test_orm_enabled_update_statement_is_not_audited(
         assert inserted_people[1].age == 2
         assert inserted_people[2].age == 3
 
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert len(change_logs) == 0
 
 
 def test_computed_columns_are_not_audited(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
     number_value_old = 3
     number_value_new = 5
     now = now_in_utc()
     expected_diff = dict(value=Diff(old=number_value_old, new=number_value_new))
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         number = Number(value=number_value_old)
         session.add(number)
 
     # Act
     log_changes(of=production_mksession, to=audit_engine)
     with freeze_time(now):
-        with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        with production_mksession.begin() as session:
             numbers_db = session.execute(select(Number)).scalars().all()
             assert len(numbers_db) == 1
             numbers_db[0].value = number_value_new
 
     # Assert we didn't change the updated object
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         numbers_db = session.execute(select(Number)).scalars().all()
         assert len(numbers_db) == 1
         assert numbers_db[0].id == number.id
@@ -126,7 +132,7 @@ def test_computed_columns_are_not_audited(
         assert numbers_db[0].doubled == number_value_new * 2
 
     # Assert we audited the insert
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert len(change_logs) == 1
         assert change_logs[0].type == OpType.UPDATE

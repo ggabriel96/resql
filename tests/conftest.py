@@ -2,7 +2,7 @@ from typing import Iterator
 
 from pytest import fixture
 from sqlalchemy.future import Engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from resql.change_log import map_default as map_default_change_log
 from resql.query_log import map_default as map_default_query_log
@@ -52,15 +52,15 @@ def _production_engine(init_database: None) -> Iterator[Engine]:  # pylint: disa
 
 
 @fixture(name="audit_mksession", scope="function")
-def _audit_mksession(audit_engine: Engine) -> sessionmaker:
+def _audit_mksession(audit_engine: Engine) -> sessionmaker[Session]:  # pylint: disable=unsubscriptable-object
     return sessionmaker(audit_engine, expire_on_commit=False, future=True)
 
 
 @fixture(name="recovery_mksession", scope="function")
-def _recovery_mksession(recovery_engine: Engine) -> sessionmaker:
+def _recovery_mksession(recovery_engine: Engine) -> sessionmaker[Session]:  # pylint: disable=unsubscriptable-object
     return sessionmaker(recovery_engine, expire_on_commit=False, future=True)
 
 
 @fixture(name="production_mksession", scope="function")
-def _production_mksession(production_engine: Engine) -> sessionmaker:
+def _production_mksession(production_engine: Engine) -> sessionmaker[Session]:  # pylint: disable=unsubscriptable-object
     return sessionmaker(production_engine, expire_on_commit=False, future=True)

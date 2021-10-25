@@ -5,7 +5,7 @@ import pytest
 from freezegun import freeze_time
 from sqlalchemy import insert, select, text
 from sqlalchemy.future import Engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from resql.auditing import Diff, log_changes
 from resql.change_log import ChangeLog, OpType
@@ -21,7 +21,9 @@ def assert_inserted_people_data(inserted_people: list[Person], expected_people: 
 
 
 def test_orm_insert_should_be_audited(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
     now = now_in_utc()
@@ -34,17 +36,17 @@ def test_orm_insert_should_be_audited(
     # Act
     log_changes(of=production_mksession, to=audit_engine)
     with freeze_time(now):
-        with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        with production_mksession.begin() as session:
             person = Person(**person_data)  # type: ignore[arg-type]
             session.add(person)
 
     # Assert we didn't change the inserted object
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         inserted_people = session.execute(select(Person)).scalars().all()
         assert_inserted_people_data(inserted_people, [person_data])
 
     # Assert we audited the insert
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = (
             audit_session.execute(select(ChangeLog).order_by(ChangeLog.diff["name"]["new"].as_string())).scalars().all()
         )
@@ -58,7 +60,9 @@ def test_orm_insert_should_be_audited(
 
 
 def test_many_orm_inserts_should_be_audited(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
     now = now_in_utc()
@@ -81,17 +85,17 @@ def test_many_orm_inserts_should_be_audited(
     # Act
     log_changes(of=production_mksession, to=audit_engine)
     with freeze_time(now):
-        with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        with production_mksession.begin() as session:
             people = [Person(**data) for data in people_data]  # type: ignore[arg-type]
             session.add_all(people)
 
     # Assert we didn't change the inserted objects
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         inserted_people = session.execute(select(Person).order_by(Person.name)).scalars().all()
         assert_inserted_people_data(inserted_people, people_data)
 
     # Assert we audited the inserts
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = (
             audit_session.execute(select(ChangeLog).order_by(ChangeLog.diff["name"]["new"].as_string())).scalars().all()
         )
@@ -117,7 +121,9 @@ def test_many_orm_inserts_should_be_audited(
 
 
 def test_rolled_back_orm_insert_should_not_be_audited(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
     person = Person(name="Someone", age=25)
@@ -129,17 +135,19 @@ def test_rolled_back_orm_insert_should_not_be_audited(
         session.rollback()
 
     # Assert
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         inserted_people = session.execute(select(Person)).all()
         assert len(inserted_people) == 0
 
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert change_logs == []
 
 
 def test_orm_insert_rolled_back_by_exception_should_not_be_audited(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
     person = Person(name="Someone", age=25)
@@ -147,22 +155,24 @@ def test_orm_insert_rolled_back_by_exception_should_not_be_audited(
     # Act
     log_changes(of=production_mksession, to=audit_engine)
     with pytest.raises(RuntimeError):
-        with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        with production_mksession.begin() as session:
             session.add(person)
             raise RuntimeError("nope")
 
     # Assert
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         inserted_people = session.execute(select(Person)).all()
         assert len(inserted_people) == 0
 
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert change_logs == []
 
 
 def test_computed_columns_are_not_audited(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
     number_value = 3
@@ -172,12 +182,12 @@ def test_computed_columns_are_not_audited(
     # Act
     log_changes(of=production_mksession, to=audit_engine)
     with freeze_time(now):
-        with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        with production_mksession.begin() as session:
             number = Number(value=number_value)
             session.add(number)
 
     # Assert we didn't change the inserted object
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         numbers_db = session.execute(select(Number)).scalars().all()
         assert len(numbers_db) == 1
         assert numbers_db[0].id == number.id
@@ -185,7 +195,7 @@ def test_computed_columns_are_not_audited(
         assert numbers_db[0].doubled == number_value * 2
 
     # Assert we audited the insert
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert len(change_logs) == 1
         assert change_logs[0].type == OpType.INSERT
@@ -197,28 +207,32 @@ def test_computed_columns_are_not_audited(
 
 
 def test_core_insert_is_not_audited(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
     person = dict(name="Someone", age=25)
 
     # Act
     log_changes(of=production_mksession, to=audit_engine)
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         session.execute(insert(Person).values(**person))
 
     # Assert
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         inserted_people = session.execute(select(Person)).scalars().all()
         assert_inserted_people_data(inserted_people, [person])
 
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert change_logs == []
 
 
 def test_many_core_inserts_is_not_audited(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
     people = [dict(name="A", age=1), dict(name="B", age=2), dict(name="C", age=3)]
@@ -226,63 +240,69 @@ def test_many_core_inserts_is_not_audited(
     # Act
     log_changes(of=production_mksession, to=audit_engine)
 
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         session.execute(insert(Person), people)
 
     # Assert
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         inserted_people = session.execute(select(Person).order_by(Person.name)).scalars().all()
         assert_inserted_people_data(inserted_people, people)
 
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert change_logs == []
 
 
 def test_text_insert_is_not_audited(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
     person = dict(name="Someone", age=25)
 
     # Act
     log_changes(of=production_mksession, to=audit_engine)
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         session.execute(text("INSERT INTO person(name, age) VALUES (:name, :age)").bindparams(**person))
 
     # Assert
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         inserted_people = session.execute(select(Person)).scalars().all()
         assert_inserted_people_data(inserted_people, [person])
 
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert change_logs == []
 
 
 def test_many_text_inserts_is_not_audited(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
     people = [dict(name="A", age=1), dict(name="B", age=2), dict(name="C", age=3)]
 
     # Act
     log_changes(of=production_mksession, to=audit_engine)
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         session.execute(text("INSERT INTO person(name, age) VALUES (:name, :age)"), people)
 
     # Assert
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         inserted_people = session.execute(select(Person).order_by(Person.name)).scalars().all()
         assert_inserted_people_data(inserted_people, people)
 
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert change_logs == []
 
 
 def test_extra_field_is_reused_across_commits(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
     # pylint: disable=too-many-locals
@@ -314,7 +334,7 @@ def test_extra_field_is_reused_across_commits(
             session.commit()
 
     # Assert
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         inserted_people = session.execute(select(Person).order_by(Person.name)).scalars().all()
         assert len(inserted_people) == 2
         assert inserted_people[0].name == person_1_data["name"]
@@ -322,7 +342,7 @@ def test_extra_field_is_reused_across_commits(
         assert inserted_people[1].name == person_2_data["name"]
         assert inserted_people[1].age == person_2_data["age"]
 
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = (
             audit_session.execute(select(ChangeLog).order_by(ChangeLog.diff["name"]["new"].as_string())).scalars().all()
         )
@@ -342,7 +362,9 @@ def test_extra_field_is_reused_across_commits(
 
 
 def test_extra_field_is_saved_independently_for_concurrent_sessions(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # pylint: disable=too-many-locals
     # Arrange
@@ -363,8 +385,8 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
 
     # Act
     with freeze_time(now):  # not sure why this had to be the outermost context manager to work
-        with production_mksession.begin() as session_1:  # type: ignore[no-untyped-call]
-            with production_mksession.begin() as session_2:  # type: ignore[no-untyped-call]
+        with production_mksession.begin() as session_1:
+            with production_mksession.begin() as session_2:
                 log_changes(of=session_1, to=audit_engine, extra=copy.deepcopy(extra_1))
                 log_changes(of=session_2, to=audit_engine, extra=copy.deepcopy(extra_2))
                 person_1 = Person(**people_data[0])  # type: ignore[arg-type]
@@ -373,11 +395,11 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
                 session_2.add(person_2)
 
     # Assert
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         inserted_people = session.execute(select(Person).order_by(Person.name)).scalars().all()
         assert_inserted_people_data(inserted_people, people_data)
 
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = (
             audit_session.execute(select(ChangeLog).order_by(ChangeLog.diff["name"]["new"].as_string())).scalars().all()
         )
@@ -397,7 +419,9 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
 
 
 def test_table_mapped_imperatively_should_be_audited(
-    audit_engine: Engine, audit_mksession: sessionmaker, production_mksession: sessionmaker
+    audit_engine: Engine,
+    audit_mksession: sessionmaker[Session],
+    production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
     now = now_in_utc()
@@ -409,18 +433,18 @@ def test_table_mapped_imperatively_should_be_audited(
     # Act
     log_changes(of=production_mksession, to=audit_engine)
     with freeze_time(now):
-        with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+        with production_mksession.begin() as session:
             imperative = ImperativeModel(**imperative_data)  # type: ignore[call-arg]
             session.add(imperative)
 
     # Assert we didn't change the inserted object
-    with production_mksession.begin() as session:  # type: ignore[no-untyped-call]
+    with production_mksession.begin() as session:
         inserted_imperatives = session.execute(select(ImperativeModel)).scalars().all()
         assert len(inserted_imperatives) == 1
         assert inserted_imperatives[0].value == imperative_data["value"]
 
     # Assert we audited the insert
-    with audit_mksession.begin() as audit_session:  # type: ignore[no-untyped-call]
+    with audit_mksession.begin() as audit_session:
         change_logs = audit_session.execute(select(ChangeLog)).scalars().all()
         assert len(change_logs) == 1
         assert change_logs[0].type == OpType.INSERT
