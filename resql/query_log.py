@@ -13,7 +13,7 @@ class QueryLog:
     dialect_description: str
     executed_at: dt.datetime
     extra: Optional[dict[str, Any]]
-    parameters: Optional[dict[str, Any]]
+    parameters: list[dict[str, Any]]
     statement: str
     type: str
 
