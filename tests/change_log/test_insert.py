@@ -22,7 +22,7 @@ def assert_inserted_people_data(inserted_people: list[Person], expected_people: 
 
 def test_orm_insert_should_be_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
@@ -61,7 +61,7 @@ def test_orm_insert_should_be_audited(
 
 def test_many_orm_inserts_should_be_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
@@ -122,7 +122,7 @@ def test_many_orm_inserts_should_be_audited(
 
 def test_rolled_back_orm_insert_should_not_be_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
@@ -146,7 +146,7 @@ def test_rolled_back_orm_insert_should_not_be_audited(
 
 def test_orm_insert_rolled_back_by_exception_should_not_be_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
@@ -171,7 +171,7 @@ def test_orm_insert_rolled_back_by_exception_should_not_be_audited(
 
 def test_computed_columns_are_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
@@ -208,7 +208,7 @@ def test_computed_columns_are_not_audited(
 
 def test_core_insert_is_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
@@ -231,7 +231,7 @@ def test_core_insert_is_not_audited(
 
 def test_many_core_inserts_is_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
@@ -255,7 +255,7 @@ def test_many_core_inserts_is_not_audited(
 
 def test_text_insert_is_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
@@ -278,7 +278,7 @@ def test_text_insert_is_not_audited(
 
 def test_many_text_inserts_is_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
@@ -301,7 +301,7 @@ def test_many_text_inserts_is_not_audited(
 
 def test_extra_field_is_reused_across_commits(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
@@ -363,7 +363,7 @@ def test_extra_field_is_reused_across_commits(
 
 def test_extra_field_is_saved_independently_for_concurrent_sessions(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # pylint: disable=too-many-locals
@@ -420,7 +420,7 @@ def test_extra_field_is_saved_independently_for_concurrent_sessions(
 
 def test_table_mapped_imperatively_should_be_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange

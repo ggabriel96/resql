@@ -11,7 +11,7 @@ from tests.utils import now_in_utc
 
 def test_orm_update_should_be_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
@@ -56,7 +56,7 @@ def test_orm_update_should_be_audited(
 
 def test_orm_enabled_update_statement_is_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     """
@@ -103,7 +103,7 @@ def test_orm_enabled_update_statement_is_not_audited(
 
 def test_computed_columns_are_not_audited(
     audit_engine: Engine,
-    audit_mksession: sessionmaker[Session],
+    audit_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
     production_mksession: sessionmaker[Session],  # pylint: disable=unsubscriptable-object
 ) -> None:
     # Arrange
