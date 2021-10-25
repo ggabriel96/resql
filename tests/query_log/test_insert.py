@@ -17,7 +17,7 @@ def test_extra_field_is_reused_across_commits_on_same_engine(
     production_engine: Engine,
     recovery_mksession: sessionmaker,  # type: ignore[type-arg]
 ) -> None:
-    #
+    # Arrange
     now = now_in_utc()
     dt_before = now - dt.timedelta(seconds=1)
     dt_after = now + dt.timedelta(seconds=1)
