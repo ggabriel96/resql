@@ -1,15 +1,94 @@
 import copy
+from typing import Any
 
 from freezegun import freeze_time
 from sqlalchemy import insert, select
 from sqlalchemy.future import Engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from resql.auditing import log_queries
 from resql.change_log import OpType
 from resql.query_log import QueryLog
 from tests.models import Person
 from tests.utils import now_in_utc
+
+
+def assert_inserted_people_data(inserted_people: list[Person], expected_people: list[dict[str, Any]]) -> None:
+    assert len(inserted_people) == len(expected_people)
+    for inserted, expected in zip(inserted_people, expected_people):
+        assert inserted.name == expected["name"]
+        assert inserted.age == expected["age"]
+
+
+def test_orm_insert_should_be_audited(
+    recovery_engine: Engine,
+    production_engine: Engine,
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
+    recovery_mksession: sessionmaker,  # type: ignore[type-arg]
+) -> None:
+    # Arrange
+    now = now_in_utc()
+    person_data = dict(name="Someone", age=25)
+
+    # Act
+    # use connection so we don't audit the Engine globally, leaking to other tests
+    with production_engine.connect() as conn:
+        log_queries(of=conn, to=recovery_engine)
+        with freeze_time(now):
+            with Session(conn, future=True) as session, session.begin():
+                person = Person(**person_data)  # type: ignore[arg-type]
+                session.add(person)
+
+    # Assert we didn't change the inserted object
+    with production_mksession.begin() as session:
+        inserted_people = session.execute(select(Person)).scalars().all()
+        assert_inserted_people_data(inserted_people, [person_data])
+
+    # Assert we audited the query
+    with recovery_mksession.begin() as recovery_session:
+        query_logs: list[QueryLog] = recovery_session.execute(select(QueryLog)).scalars().all()
+        assert len(query_logs) == 1
+        assert query_logs[0].dialect_description == getattr(production_engine.dialect, "dialect_description", ...)
+        assert query_logs[0].executed_at == now
+        assert query_logs[0].extra is None
+        assert query_logs[0].parameters == [person_data]
+        assert Person.__tablename__ in query_logs[0].statement
+        assert query_logs[0].type == OpType.INSERT
+
+
+def test_many_core_inserts_should_be_audited(
+    recovery_engine: Engine,
+    production_engine: Engine,
+    production_mksession: sessionmaker,  # type: ignore[type-arg]
+    recovery_mksession: sessionmaker,  # type: ignore[type-arg]
+) -> None:
+    # Arrange
+    now = now_in_utc()
+    people = [dict(name="A", age=1), dict(name="B", age=2), dict(name="C", age=3)]
+
+    # Act
+    # use connection so we don't audit the Engine globally, leaking to other tests
+    with production_engine.connect() as conn:
+        log_queries(of=conn, to=recovery_engine)
+        with freeze_time(now):
+            with Session(conn, future=True) as session, session.begin():
+                session.execute(insert(Person), people)
+
+    # Assert we didn't change the inserted objects
+    with production_mksession.begin() as session:
+        inserted_people = session.execute(select(Person)).scalars().all()
+        assert_inserted_people_data(inserted_people, people)
+
+    # Assert we audited the query
+    with recovery_mksession.begin() as recovery_session:
+        query_logs: list[QueryLog] = recovery_session.execute(select(QueryLog)).scalars().all()
+        assert len(query_logs) == 1
+        assert query_logs[0].dialect_description == getattr(production_engine.dialect, "dialect_description", ...)
+        assert query_logs[0].executed_at == now
+        assert query_logs[0].extra is None
+        assert query_logs[0].parameters == people
+        assert Person.__tablename__ in query_logs[0].statement
+        assert query_logs[0].type == OpType.INSERT
 
 
 def test_extra_field_is_reused_across_commits_on_same_engine(
